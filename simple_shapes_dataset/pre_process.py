@@ -3,7 +3,7 @@ from collections.abc import Sequence
 import torch
 import torch.nn.functional as F
 
-from simple_shapes_dataset.dataset.domain import Attribute, Text
+from simple_shapes_dataset.domain import Attribute, Text
 from simple_shapes_dataset.text import composer
 from simple_shapes_dataset.text.utils import (
     choices_from_structure_categories,

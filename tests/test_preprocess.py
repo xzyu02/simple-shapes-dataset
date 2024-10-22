@@ -3,8 +3,8 @@ import torch.utils.data
 from shimmer import ShimmerDataset
 from utils import PROJECT_DIR
 
-from simple_shapes_dataset.dataset.domain import get_default_domains
-from simple_shapes_dataset.dataset.pre_process import attribute_to_tensor
+from simple_shapes_dataset.domain import get_default_domains
+from simple_shapes_dataset.pre_process import attribute_to_tensor
 
 
 def test_attr_preprocess():

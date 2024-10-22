@@ -5,7 +5,7 @@ from click.testing import CliRunner
 
 from simple_shapes_dataset.cli.alignments import add_alignment_split
 from simple_shapes_dataset.cli.create_dataset import create_dataset
-from simple_shapes_dataset.dataset.domain_alignment import get_alignment
+from simple_shapes_dataset.domain_alignment import get_alignment
 
 
 def test_create_dataset(tmp_path):

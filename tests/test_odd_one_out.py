@@ -1,7 +1,7 @@
 from utils import PROJECT_DIR
 
-from simple_shapes_dataset.dataset.domain import get_default_domains
-from simple_shapes_dataset.dataset.downstream.odd_one_out.dataset import (
+from simple_shapes_dataset.domain import get_default_domains
+from simple_shapes_dataset.downstream.odd_one_out.dataset import (
     OddOneOutDataset,
 )
 

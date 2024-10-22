@@ -3,11 +3,11 @@ from torch.utils.data.dataloader import DataLoader
 from torchvision.transforms import ToTensor
 from utils import PROJECT_DIR
 
-from simple_shapes_dataset.dataset.data_module import SimpleShapesDataModule
-from simple_shapes_dataset.dataset.domain import (
+from simple_shapes_dataset.data_module import SimpleShapesDataModule
+from simple_shapes_dataset.domain import (
     get_default_domains,
 )
-from simple_shapes_dataset.dataset.domain_alignment import get_aligned_datasets
+from simple_shapes_dataset.domain_alignment import get_aligned_datasets
 
 
 def test_dataset():
