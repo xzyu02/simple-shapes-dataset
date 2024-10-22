@@ -1,4 +1,5 @@
 from collections.abc import Callable, Iterable
+from enum import Enum
 from pathlib import Path
 from typing import Any, NamedTuple, TypedDict
 
@@ -7,7 +8,26 @@ import torch
 from PIL import Image
 from shimmer import DataDomain, DomainDesc
 
-from simple_shapes_dataset.types import DomainType
+
+class DomainType(Enum):
+    v = DomainDesc("v", "v")
+    v_latents = DomainDesc("v", "v_latents")
+    attr = DomainDesc("attr", "attr")
+    t = DomainDesc("t", "t")
+    raw_text = DomainDesc("t", "raw_text")
+
+
+class DomainModelVariantType(Enum):
+    v = (DomainType.v, "default")
+    attr = (DomainType.attr, "default")
+    attr_legacy = (DomainType.attr, "legacy")
+    attr_unpaired = (DomainType.attr, "unpaired")
+    v_latents = (DomainType.v_latents, "default")
+    v_latents_unpaired = (DomainType.v_latents, "unpaired")
+
+    def __init__(self, kind: DomainType, model_variant: str) -> None:
+        self.kind = kind
+        self.model_variant = model_variant
 
 
 class SimpleShapesImages(DataDomain):
@@ -305,6 +325,7 @@ def get_default_domains(
 ) -> dict[DomainDesc, type[DataDomain]]:
     domain_classes = {}
     for domain in domains:
-        domain_desc = DomainType[domain].value if isinstance(domain, str) else domain
-        domain_classes[domain_desc] = DEFAULT_DOMAINS[domain_desc.kind]
+        if isinstance(domain, str):
+            domain = DomainType[domain].value
+        domain_classes[domain] = DEFAULT_DOMAINS[domain.kind]
     return domain_classes
