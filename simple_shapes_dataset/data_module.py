@@ -10,11 +10,7 @@ from torch.utils.data import DataLoader, Subset, default_collate
 from torchvision.transforms import Compose, ToTensor
 
 from simple_shapes_dataset.domain_alignment import get_aligned_datasets
-from simple_shapes_dataset.pre_process import (
-    NormalizeAttributes,
-    TextAndAttrs,
-    attribute_to_tensor,
-)
+from simple_shapes_dataset.pre_process import NormalizeAttributes, attribute_to_tensor
 
 DatasetT = ShimmerDataset | Subset
 
@@ -80,9 +76,6 @@ class SimpleShapesDataModule(LightningDataModule):
 
             if domain == "v" and self._use_default_transforms:
                 domain_transforms.append(ToTensor())
-
-            if domain == "t" and self._use_default_transforms:
-                domain_transforms.append(TextAndAttrs(image_size=32))
 
             if domain in self.additional_transforms:
                 domain_transforms.extend(self.additional_transforms[domain])
