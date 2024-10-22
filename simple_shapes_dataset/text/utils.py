@@ -1,6 +1,5 @@
 import math
 from itertools import permutations
-from typing import Any
 
 from attributes_to_language.composer import Choices, Composer
 
