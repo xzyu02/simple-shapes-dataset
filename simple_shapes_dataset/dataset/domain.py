@@ -305,7 +305,6 @@ def get_default_domains(
 ) -> dict[DomainDesc, type[DataDomain]]:
     domain_classes = {}
     for domain in domains:
-        if isinstance(domain, str):
-            domain = DomainType[domain].value
-        domain_classes[domain] = DEFAULT_DOMAINS[domain.kind]
+        domain_desc = DomainType[domain].value if isinstance(domain, str) else domain
+        domain_classes[domain_desc] = DEFAULT_DOMAINS[domain_desc.kind]
     return domain_classes
