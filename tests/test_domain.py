@@ -1,4 +1,6 @@
-from simple_shapes.domain import (
+from utils import PROJECT_DIR
+
+from simple_shapes_dataset.domain import (
     Attribute,
     RawText,
     SimpleShapesAttributes,
@@ -7,7 +9,6 @@ from simple_shapes.domain import (
     SimpleShapesText,
     Text,
 )
-from utils import PROJECT_DIR
 
 
 def test_image_domain():
