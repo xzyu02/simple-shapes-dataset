@@ -1,7 +1,7 @@
 import math
 from itertools import permutations
 
-from attributes_to_language.composer import Choices, Composer
+from attributes_to_language import Choices, Composer
 
 from simple_shapes_dataset.domain import Choice
 
