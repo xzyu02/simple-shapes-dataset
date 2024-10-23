@@ -1,9 +1,9 @@
-from shimmer import ShimmerDataset
 from torch.utils.data.dataloader import DataLoader
 from torchvision.transforms import ToTensor
 from utils import PROJECT_DIR
 
 from simple_shapes_dataset.data_module import SimpleShapesDataModule
+from simple_shapes_dataset.dataset import SimpleShapesDataset
 from simple_shapes_dataset.domain import (
     get_default_domains,
 )
@@ -11,7 +11,7 @@ from simple_shapes_dataset.domain_alignment import get_aligned_datasets
 
 
 def test_dataset():
-    dataset = ShimmerDataset(
+    dataset = SimpleShapesDataset(
         PROJECT_DIR / "sample_dataset",
         split="train",
         domain_classes=get_default_domains(["v", "attr"]),
@@ -25,7 +25,7 @@ def test_dataset():
 
 
 def test_dataset_val():
-    dataset = ShimmerDataset(
+    dataset = SimpleShapesDataset(
         PROJECT_DIR / "sample_dataset",
         split="val",
         domain_classes=get_default_domains(["v", "attr"]),
@@ -42,7 +42,7 @@ def test_dataloader():
     transform = {
         "v": ToTensor(),
     }
-    dataset = ShimmerDataset(
+    dataset = SimpleShapesDataset(
         PROJECT_DIR / "sample_dataset",
         split="train",
         domain_classes=get_default_domains(["v", "attr"]),

@@ -5,6 +5,7 @@ import simple_shapes_dataset.downstream as downstream
 import simple_shapes_dataset.text as text
 
 from .data_module import SimpleShapesDataModule
+from .dataset import RepeatedDataset, SimpleShapesDataset, SizedDataset
 from .domain import (
     DEFAULT_DOMAINS,
     Attribute,
@@ -44,6 +45,9 @@ __all__ = [
     "downstream",
     "text",
     "SimpleShapesDataModule",
+    "RepeatedDataset",
+    "SimpleShapesDataset",
+    "SizedDataset",
     "DEFAULT_DOMAINS",
     "Attribute",
     "AttributesAdditionalArgs",

@@ -4,10 +4,11 @@ from typing import Any
 
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
-from shimmer import DataDomain, DomainDesc, RepeatedDataset
 from torch.utils.data import DataLoader, Subset, default_collate
 from torchvision.transforms import Compose, ToTensor
 
+from simple_shapes_dataset.dataset import RepeatedDataset
+from simple_shapes_dataset.domain import DataDomain, DomainDesc
 from simple_shapes_dataset.domain_alignment import get_alignment
 from simple_shapes_dataset.downstream.odd_one_out.dataset import (
     OddOneOutDataset,

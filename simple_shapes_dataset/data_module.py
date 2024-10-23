@@ -5,14 +5,15 @@ from typing import Any, Literal
 import numpy as np
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
-from shimmer import DataDomain, DomainDesc, RepeatedDataset, ShimmerDataset
 from torch.utils.data import DataLoader, Subset, default_collate
 from torchvision.transforms import Compose, ToTensor
 
+from simple_shapes_dataset.dataset import RepeatedDataset, SimpleShapesDataset
+from simple_shapes_dataset.domain import DataDomain, DomainDesc
 from simple_shapes_dataset.domain_alignment import get_aligned_datasets
 from simple_shapes_dataset.pre_process import NormalizeAttributes, attribute_to_tensor
 
-DatasetT = ShimmerDataset | Subset
+DatasetT = SimpleShapesDataset | Subset
 
 
 class SimpleShapesDataModule(LightningDataModule):
@@ -115,7 +116,7 @@ class SimpleShapesDataModule(LightningDataModule):
 
         if split in ("val", "test"):
             return {
-                frozenset(domains): ShimmerDataset(
+                frozenset(domains): SimpleShapesDataset(
                     self.dataset_path,
                     split,
                     self.domain_classes,
@@ -124,7 +125,7 @@ class SimpleShapesDataModule(LightningDataModule):
                 )
             }
         return {
-            frozenset([domain]): ShimmerDataset(
+            frozenset([domain]): SimpleShapesDataset(
                 self.dataset_path,
                 split,
                 {
