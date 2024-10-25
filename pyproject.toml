@@ -14,37 +14,20 @@ tqdm = ">=4.66.3,<4.67.0"
 transformers = "^4.30.2"
 opencv-python = "^4.7.0.72"
 attributes-to-language = {git = "https://github.com/bdvllrs/attributes-to-language.git", rev = "v0.4.0"}
-auto-sbatch = {git = "https://github.com/bdvllrs/auto-sbatch.git", rev = "v0.4.1"}
-migrate-ckpt = {git = "https://github.com/bdvllrs/migrate-ckpt.git", rev = "v0.2.0"}
-cfg-tools = {git = "https://github.com/bdvllrs/cfg-tools.git", rev = "v0.3.0"}
 pillow = "^10.3.0"
 numpy = "^1.26"
 torch = ">=2.0.1,<2.6.0"
-wandb = "^0.18.3"
 lightning = ">=2.1.0"
-pydantic = "^2.6.0"
 torchvision = ">=0.15.2,<0.21"
-rich = "^13.4.2"
 
 [tool.poetry.group.dev.dependencies]
-types-tqdm = "^4.65.0.1"
-lxml-stubs = "^0.4.0"
-pandas-stubs = "^2.0.2.230605"
-types-pillow = "^9.5.0.4"
-types-pywin32 = "^306.0.0.2"
-types-setuptools = "^67.8.0.0"
-types-tabulate = "^0.9.0.2"
-types-dataclasses = "^0.6.6"
-types-click = "^7.1.8"
 mypy = "1.10.0"
 ruff = "^0.6.0"
 pre-commit = "^3.6.2"
-types-pyyaml = "^6.0.12.20240311"
-types-protobuf = "^4.24.0.20240311"
-types-requests = "^2.31.0.20240403"
-types-six = "^1.16.21.20240311"
-types-redis = "^4.6.0.20240819"
-types-python-dateutil = "^2.9.0.20241003"
+types-pyyaml = "^6.0.12.20240917"
+types-protobuf = "^5.28.0.20240924"
+types-redis = "^4.6.0.20241004"
+types-tabulate = "^0.9.0.20240106"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.3.2"
