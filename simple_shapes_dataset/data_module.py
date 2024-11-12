@@ -16,6 +16,16 @@ from simple_shapes_dataset.pre_process import NormalizeAttributes, attribute_to_
 DatasetT = SimpleShapesDataset | Subset
 
 
+def check_domain_compat(
+    domain_classes: Mapping[DomainDesc, type[DataDomain]],
+    domain_proportions: Mapping[frozenset[str], float],
+) -> bool:
+    domains_from_props: set[str] = set()
+    domains_from_props = domains_from_props.union(*domain_proportions.keys())
+    domains_from_domain_classes = {domain_class.base for domain_class in domain_classes}
+    return domains_from_props == domains_from_domain_classes
+
+
 class SimpleShapesDataModule(LightningDataModule):
     def __init__(
         self,
@@ -36,6 +46,18 @@ class SimpleShapesDataModule(LightningDataModule):
         use_default_transforms: bool = True,
     ) -> None:
         super().__init__()
+
+        domains_from_props: set[str] = set()
+        domains_from_props = domains_from_props.union(*domain_proportions.keys())
+        domains_from_domain_classes = {
+            domain_class.base for domain_class in domain_classes
+        }
+        if domains_from_props <= domains_from_domain_classes:
+            raise ValueError(
+                f"Domains set in `domain_classes` ({domains_from_domain_classes}) "
+                "are different from domains set in "
+                f"`domain_proportions` ({domains_from_props})."
+            )
 
         self.dataset_path = Path(dataset_path)
         self.domain_classes = domain_classes
