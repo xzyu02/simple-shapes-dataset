@@ -52,7 +52,7 @@ class SimpleShapesDataModule(LightningDataModule):
         domains_from_domain_classes = {
             domain_class.base for domain_class in domain_classes
         }
-        if domains_from_props <= domains_from_domain_classes:
+        if domains_from_props < domains_from_domain_classes:
             raise ValueError(
                 f"Domains set in `domain_classes` ({domains_from_domain_classes}) "
                 "are different from domains set in "

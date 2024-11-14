@@ -88,8 +88,9 @@ def nullify_attribute_rotation(
     attr: Sequence[torch.Tensor],
 ) -> list[torch.Tensor]:
     new_attr = attr[1].clone()
-    new_attr[3] = 0.0
-    new_attr[4] = 1.0
+    angle = torch.zeros_like(new_attr[3])
+    new_attr[3] = torch.cos(angle)
+    new_attr[4] = torch.sin(angle)
     return [attr[0], new_attr, attr[2]]
 
 
