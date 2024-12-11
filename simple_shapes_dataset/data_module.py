@@ -42,6 +42,7 @@ class SimpleShapesDataModule(LightningDataModule):
             Mapping[str, Sequence[Callable[[Any], Any]]] | None
         ) = None,
         train_transforms: (Mapping[str, Sequence[Callable[[Any], Any]]] | None) = None,
+        val_transforms: (Mapping[str, Sequence[Callable[[Any], Any]]] | None) = None,
         collate_fn: Callable[[list[Any]], Any] | None = None,
         use_default_transforms: bool = True,
     ) -> None:
@@ -67,6 +68,7 @@ class SimpleShapesDataModule(LightningDataModule):
         self.domain_args = domain_args or {}
         self.additional_transforms = additional_transforms or {}
         self._train_transform = train_transforms or {}
+        self._val_transform = val_transforms or {}
         self._use_default_transforms = use_default_transforms
 
         self.max_train_size = max_train_size
@@ -104,6 +106,8 @@ class SimpleShapesDataModule(LightningDataModule):
                 domain_transforms.extend(self.additional_transforms[domain])
             if domain in self._train_transform and mode == "train":
                 domain_transforms.extend(self._train_transform[domain])
+            if domain in self._val_transform and mode != "train":
+                domain_transforms.extend(self._val_transform[domain])
             transforms[domain] = Compose(domain_transforms)
         return transforms
 
