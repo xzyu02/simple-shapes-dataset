@@ -1,5 +1,7 @@
 import click
 
+from simple_shapes_dataset.cli.download import download_dataset
+
 from .alignments import alignment_group, create_domain_split
 from .create_dataset import (
     create_dataset,
@@ -54,6 +56,7 @@ cli.add_command(alignment_group)
 cli.add_command(unpaired_attributes_command)
 cli.add_command(create_ood_split)
 cli.add_command(create_odd_one_out_dataset)
+cli.add_command(download_dataset)
 
 
 __all__ = [

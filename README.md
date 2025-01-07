@@ -15,6 +15,16 @@ With pip:
 pip install .
 ```
 
+## Download dataset
+
+```
+shapesd download [--path DATASET_PATH]
+```
+Download the dataset in the given folder (defaults to the current folder).
+
+You can download the dataset directly from:
+[https://zenodo.org/records/8112838](https://zenodo.org/records/8112838).
+
 ## Create dataset
 ```
 shapesd create --output_path "/path/to/dataset"
