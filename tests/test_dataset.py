@@ -8,6 +8,7 @@ from simple_shapes_dataset.domain import (
     get_default_domains,
 )
 from simple_shapes_dataset.domain_alignment import get_aligned_datasets
+from simple_shapes_dataset.pre_process import attribute_to_tensor
 
 
 def test_dataset():
@@ -39,9 +40,7 @@ def test_dataset_val():
 
 
 def test_dataloader():
-    transform = {
-        "v": ToTensor(),
-    }
+    transform = {"v": ToTensor(), "attr": attribute_to_tensor}
     dataset = SimpleShapesDataset(
         PROJECT_DIR / "sample_dataset",
         split="train",
