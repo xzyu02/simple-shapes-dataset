@@ -1,41 +1,11 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, NamedTuple, TypedDict, TypeVar
 
 import numpy as np
 import torch
 from PIL import Image
-
-
-@dataclass(frozen=True)
-class DomainDesc:
-    base: str
-    kind: str
-
-
-class DomainType(Enum):
-    v = DomainDesc("v", "v")
-    v_latents = DomainDesc("v", "v_latents")
-    attr = DomainDesc("attr", "attr")
-    t = DomainDesc("t", "t")
-    raw_text = DomainDesc("t", "raw_text")
-
-
-class DomainModelVariantType(Enum):
-    v = (DomainType.v, "default")
-    attr = (DomainType.attr, "default")
-    attr_legacy = (DomainType.attr, "legacy")
-    attr_unpaired = (DomainType.attr, "unpaired")
-    v_latents = (DomainType.v_latents, "default")
-    v_latents_unpaired = (DomainType.v_latents, "unpaired")
-
-    def __init__(self, kind: DomainType, model_variant: str) -> None:
-        self.kind = kind
-        self.model_variant = model_variant
-
 
 # TODO: Consider handling CPU usage
 # with a workaround in:
@@ -145,9 +115,11 @@ class SimpleShapesPretrainedVisual(DataDomain):
         self.latents = torch.from_numpy(np.load(self.presaved_path.resolve()))
         self.dataset_size = self.latents.size(0)
 
-        assert (self.dataset_path / f"{split}_unpaired.npy").exists()
-        unpaired = np.load(self.dataset_path / f"{split}_unpaired.npy")
-        self.unpaired = torch.from_numpy(unpaired[:, 1]).float()
+        if (self.dataset_path / f"{split}_unpaired.npy").exists():
+            unpaired = np.load(self.dataset_path / f"{split}_unpaired.npy")
+            self.unpaired = torch.from_numpy(unpaired[:, 1]).float()
+        else:
+            self.unpaired = torch.zeros((self.latents.size(0),)).float()
 
     def __len__(self) -> int:
         return self.dataset_size
@@ -198,17 +170,22 @@ class SimpleShapesAttributes(DataDomain):
         )
         self.transform = transform
 
-        default_args = AttributesAdditionalArgs(n_unpaired=1)
+        default_args = AttributesAdditionalArgs(n_unpaired=0)
         self.additional_args = additional_args or default_args
         self.dataset_size = self.labels.size(0)
 
-        assert (self.dataset_path / f"{split}_unpaired.npy").exists()
-        assert self.additional_args["n_unpaired"] >= 1, "n_unpaired should be >= 1"
-        self.unpaired = torch.from_numpy(
-            np.load(self.dataset_path / f"{split}_unpaired.npy")[
-                :, 2 : 2 + self.additional_args["n_unpaired"]
-            ]
-        ).float()
+        self.unpaired = None
+        if self.additional_args["n_unpaired"] >= 1:
+            if not (self.dataset_path / f"{split}_unpaired.npy").exists():
+                raise ValueError(
+                    "Asking for an unpaired attribute, "
+                    "but there is no unpaired label file."
+                )
+            self.unpaired = torch.from_numpy(
+                np.load(self.dataset_path / f"{split}_unpaired.npy")[
+                    :, 2 : 2 + self.additional_args["n_unpaired"]
+                ]
+            ).float()
 
     def __len__(self) -> int:
         return self.dataset_size
@@ -219,6 +196,11 @@ class SimpleShapesAttributes(DataDomain):
             An Attribute named tuple at the given index.
         """
         label = self.labels[index]
+        unpaired = (
+            self.unpaired[index]
+            if self.unpaired is not None
+            else torch.zeros_like(label[1])
+        )
         item = Attribute(
             category=label[0].long(),
             x=label[1],
@@ -228,7 +210,7 @@ class SimpleShapesAttributes(DataDomain):
             color_r=label[5] / 255,
             color_g=label[6] / 255,
             color_b=label[7] / 255,
-            unpaired=self.unpaired[index],
+            unpaired=unpaired,
         )
 
         if self.transform is not None:
