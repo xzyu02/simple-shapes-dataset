@@ -1,11 +1,37 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, NamedTuple, TypedDict, TypeVar
 
 import numpy as np
 import torch
 from PIL import Image
+
+
+@dataclass(frozen=True)
+class DomainDesc:
+    base: str
+    kind: str
+
+
+class DomainType(Enum):
+    """
+    Different domain types available. Each model type is
+    described as with a `DomainDesc` which represents a base type and a kind.
+
+    For example "v_latents" has a base of "v" as it a special representation of
+    the visual domain.
+    """
+
+    v = DomainDesc("v", "v")  # Uses images and visual VAE to encode images
+    # Uses pre-saved latent representations extracted from the visual VAE
+    v_latents = DomainDesc("v", "v_latents")
+    attr = DomainDesc("attr", "attr")
+    raw_text = DomainDesc("t", "raw_text")  # raw text representations (str)
+    t = DomainDesc("t", "t")  # loads BERT representations of the raw text
+
 
 # TODO: Consider handling CPU usage
 # with a workaround in:
@@ -146,7 +172,7 @@ class Attribute(NamedTuple):
     color_r: torch.Tensor
     color_g: torch.Tensor
     color_b: torch.Tensor
-    unpaired: torch.Tensor
+    unpaired: torch.Tensor | None
 
 
 class AttributesAdditionalArgs(TypedDict):
@@ -196,11 +222,7 @@ class SimpleShapesAttributes(DataDomain):
             An Attribute named tuple at the given index.
         """
         label = self.labels[index]
-        unpaired = (
-            self.unpaired[index]
-            if self.unpaired is not None
-            else torch.zeros_like(label[1])
-        )
+        unpaired = self.unpaired[index] if self.unpaired is not None else None
         item = Attribute(
             category=label[0].long(),
             x=label[1],

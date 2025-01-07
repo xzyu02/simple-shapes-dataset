@@ -66,7 +66,7 @@ class UnnormalizeAttributes:
 
 
 def attribute_to_tensor(attr: Attribute) -> list[torch.Tensor]:
-    return [
+    tensors = [
         F.one_hot(attr.category, num_classes=3),
         torch.cat(
             [
@@ -80,8 +80,10 @@ def attribute_to_tensor(attr: Attribute) -> list[torch.Tensor]:
                 attr.color_b.unsqueeze(0),
             ]
         ),
-        attr.unpaired,
     ]
+    if attr.unpaired is not None:
+        tensors.append(attr.unpaired)
+    return tensors
 
 
 def nullify_attribute_rotation(
@@ -91,13 +93,19 @@ def nullify_attribute_rotation(
     angle = torch.zeros_like(new_attr[3])
     new_attr[3] = torch.cos(angle)
     new_attr[4] = torch.sin(angle)
-    return [attr[0], new_attr, attr[2]]
+    new_attrs = [attr[0], new_attr]
+    if len(attr) == 3:
+        new_attrs.append(attr[2])
+    return new_attrs
 
 
 def tensor_to_attribute(tensor: Sequence[torch.Tensor]) -> Attribute:
     category = tensor[0]
     attributes = tensor[1]
-    unpaired = tensor[2]
+    unpaired = None
+
+    if len(tensor) == 3:
+        unpaired = tensor[2]
 
     rotation = torch.atan2(attributes[:, 4], attributes[:, 3])
     constrained_rotation = torch.where(rotation < 0, rotation + 2 * torch.pi, rotation)
@@ -133,7 +141,8 @@ class TextAndAttrs:
         attr_list = attribute_to_tensor(attr)
         text["cls"] = attr_list[0]
         text["attr"] = attr_list[1]
-        text["unpaired"] = attr_list[2]
+        if len(attr_list) == 3:
+            text["unpaired"] = attr_list[2]
         grammar_categories = structure_category_from_choice(composer, x.choice)
         text.update(
             {
