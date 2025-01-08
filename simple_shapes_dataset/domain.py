@@ -115,6 +115,7 @@ class SimpleShapesImages(DataDomain):
 
 class PretrainedVisualAdditionalArgs(TypedDict):
     presaved_path: str
+    use_unpaired: bool
 
 
 class SimpleShapesPretrainedVisual(DataDomain):
@@ -130,9 +131,12 @@ class SimpleShapesPretrainedVisual(DataDomain):
         self.dataset_path = Path(dataset_path)
         self.split = split
         self.transform = transform
-        self.additional_args = additional_args
-
-        assert self.additional_args is not None
+        default_args = PretrainedVisualAdditionalArgs(
+            presaved_path=".", use_unpaired=False
+        )
+        self.additional_args = default_args
+        if additional_args is not None:
+            self.additional_args.update(additional_args)
 
         self.presaved_path = (
             self.dataset_path
@@ -141,7 +145,8 @@ class SimpleShapesPretrainedVisual(DataDomain):
         self.latents = torch.from_numpy(np.load(self.presaved_path.resolve()))
         self.dataset_size = self.latents.size(0)
 
-        if (self.dataset_path / f"{split}_unpaired.npy").exists():
+        if self.additional_args["use_unpaired"]:
+            assert (self.dataset_path / f"{split}_unpaired.npy").exists()
             unpaired = np.load(self.dataset_path / f"{split}_unpaired.npy")
             self.unpaired = torch.from_numpy(unpaired[:, 1]).float()
         else:
@@ -151,10 +156,12 @@ class SimpleShapesPretrainedVisual(DataDomain):
         return self.dataset_size
 
     def __getitem__(self, index: int):
-        x = torch.cat([self.latents[index], self.unpaired[index].unsqueeze(0)], dim=0)
-
-        if self.transform is not None:
-            return self.transform(x)
+        if self.additional_args["use_unpaired"]:
+            x = torch.cat(
+                [self.latents[index], self.unpaired[index].unsqueeze(0)], dim=0
+            )
+        else:
+            x = self.latents[index]
         return x
 
 
