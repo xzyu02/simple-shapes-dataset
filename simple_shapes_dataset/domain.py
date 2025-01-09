@@ -332,12 +332,17 @@ class SimpleShapesText(DataDomain):
             self.bert_std = torch.from_numpy(
                 np.load(self.dataset_path / f"{self.latent_filename}_std.npy")
             )
-        else:
+        elif (self.dataset_path / f"mean_{self.latent_filename}.npy").exists():
             self.bert_mean = torch.from_numpy(
                 np.load(self.dataset_path / f"mean_{self.latent_filename}.npy")
             )
             self.bert_std = torch.from_numpy(
                 np.load(self.dataset_path / f"std_{self.latent_filename}.npy")
+            )
+        else:
+            raise FileExistsError(
+                str((self.dataset_path / f"mean_{self.latent_filename}.npy").resolve())
+                + " does not exit."
             )
 
         bert_data = torch.from_numpy(
