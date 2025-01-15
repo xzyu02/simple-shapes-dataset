@@ -1,6 +1,7 @@
 import click
 
 from simple_shapes_dataset.cli.download import download_dataset
+from simple_shapes_dataset.cli.migration import migrate_dataset_command
 
 from .alignments import alignment_group, create_domain_split
 from .create_dataset import (
@@ -57,6 +58,7 @@ cli.add_command(unpaired_attributes_command)
 cli.add_command(create_ood_split)
 cli.add_command(create_odd_one_out_dataset)
 cli.add_command(download_dataset)
+cli.add_command(migrate_dataset_command)
 
 
 __all__ = [
@@ -98,4 +100,5 @@ __all__ = [
     "save_dataset",
     "save_labels",
     "cli",
+    "migrate_dataset_command",
 ]

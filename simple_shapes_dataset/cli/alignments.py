@@ -161,19 +161,6 @@ def list_domain_alignment(dataset_path: str, split: str, seed: str) -> None:
     click.echo(print_table(table))
 
 
-@alignment_group.command("update-format", help="Update alignment split format")
-@click.option(
-    "--dataset_path",
-    "-p",
-    default="./",
-    type=str,
-    help="Path to the dataset",
-)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Whether to do a dry-run pass",
-)
 def update_alignment_split_format(dataset_path: str, dry_run: bool) -> None:
     dataset_location = Path(dataset_path)
     assert dataset_location.exists()
@@ -198,3 +185,20 @@ def update_alignment_split_format(dataset_path: str, dry_run: bool) -> None:
                 print(f"RENAME {file.name} -> {new_file}")
             else:
                 file.rename(file.with_name(new_file))
+
+
+@alignment_group.command("update-format", help="Update alignment split format")
+@click.option(
+    "--dataset_path",
+    "-p",
+    default="./",
+    type=str,
+    help="Path to the dataset",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Whether to do a dry-run pass",
+)
+def update_alignment_split_format_command(dataset_path: str, dry_run: bool) -> None:
+    return update_alignment_split_format(dataset_path, dry_run)

@@ -25,6 +25,19 @@ Download the dataset in the given folder (defaults to the current folder).
 You can download the dataset directly from:
 [https://zenodo.org/records/8112838](https://zenodo.org/records/8112838).
 
+> [!NOTE]
+> Note that `shapesd download` automatically migrates the dataset after download (see
+> next section).
+> To avoid this behavior, use the `--no-migration` argument.
+
+
+## Migrate dataset
+You can migrate the dataset format manually to be formatted exactly as
+`shimmer-ssd`(https://github.com/ruflab/shimmer-ssd) expects it with:
+```
+shapesd migrade [-p DATASET_PATH]
+```
+
 ## Create dataset
 ```
 shapesd create --output_path "/path/to/dataset"

@@ -6,6 +6,8 @@ import click
 import requests
 from tqdm import tqdm
 
+from simple_shapes_dataset.cli.migration import migrate_dataset
+
 # DATASET_URL = "https://zenodo.org/records/8112838/files/simple_shapes_dataset.tar.gz"
 DATASET_URL = (
     "https://zenodo.org/records/14289631/files/simple_shapes_checkpoints.tar.gz"
@@ -37,11 +39,20 @@ def downlad_file(url: str, path: Path):
 )
 @click.option(
     "--force",
-    type=bool,
+    is_flag=True,
     default=False,
     help="Whether to force download, even if the dataset is already downloaded.",
 )
-def download_dataset(path: Path, force: bool):
+@click.option(
+    "--no-migration",
+    is_flag=True,
+    default=False,
+    help=(
+        "Whether to skip migration of the dataset. "
+        "Useful if you need the old version of the dataset."
+    ),
+)
+def download_dataset(path: Path, force: bool, no_migration: bool):
     dataset_path = path / "simple_shapes_dataset"
     archive_path = path / "simple_shapes_dataset.tar.gz"
     if dataset_path.exists() and not force:
@@ -58,3 +69,6 @@ def download_dataset(path: Path, force: bool):
     with tarfile.open(archive_path, "r:gz") as archive:
         archive.extractall(path)
     archive_path.unlink()
+
+    if not no_migration:
+        migrate_dataset(path, False)
