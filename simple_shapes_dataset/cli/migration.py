@@ -22,17 +22,23 @@ def update_0p1_to_1p0(dataset_path: Path, dry_run: bool):
             create_unpaired_attributes(0, dataset_path)
     if (dataset_path / "train_bert-base-uncased.npy").exists():
         (dataset_path / "train_bert-base-uncased.npy").rename(
-            dataset_path / "train_latents.npy"
+            dataset_path / "train_latent.npy"
         )
         (dataset_path / "val_bert-base-uncased.npy").rename(
-            dataset_path / "val_latents.npy"
+            dataset_path / "val_latent.npy"
         )
         (dataset_path / "test_bert-base-uncased.npy").rename(
-            dataset_path / "test_latents.npy"
+            dataset_path / "test_latent.npy"
+        )
+        (dataset_path / "bert-base-uncased_mean.npy").rename(
+            dataset_path / "latent_mean.npy"
+        )
+        (dataset_path / "bert-base-uncased_std.npy").rename(
+            dataset_path / "latent_std.npy"
         )
 
     # Only keep the first 500,00 samples
-    train_labels = np.load(dataset_path / "train_latents.npy")
+    train_labels = np.load(dataset_path / "train_latent.npy")
     old_length = train_labels.shape[0]
     if old_length == 1_000_000 and not dry_run:
         click.echo(
@@ -50,12 +56,9 @@ def update_0p1_to_1p0(dataset_path: Path, dry_run: bool):
         train_captions_choices = np.load(
             dataset_path / "train_caption_choices.npy", allow_pickle=True
         )[:500_000]
-        np.save(
-            dataset_path / "train_bert_latentsn_caption_choices.npy",
-            train_captions_choices,
-        )
-        train_bert_latents = np.load(dataset_path / "train_latents.npy")[:500_000]
-        np.save(dataset_path / "train_latents.npy", train_bert_latents)
+        np.save(dataset_path / "train_caption_choices.npy", train_captions_choices)
+        train_bert_latents = np.load(dataset_path / "train_latent.npy")[:500_000]
+        np.save(dataset_path / "train_latent.npy", train_bert_latents)
 
         mean = train_bert_latents.mean(axis=0)
         std = train_bert_latents.std(axis=0)
