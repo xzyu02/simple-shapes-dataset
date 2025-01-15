@@ -10,6 +10,7 @@ from tqdm import tqdm
 from simple_shapes_dataset.cli.alignments import create_domain_split
 from simple_shapes_dataset.cli.ood_splits import filter_dataset, ood_split
 from simple_shapes_dataset.text import composer
+from simple_shapes_dataset.version import __version__
 
 from .utils import (
     generate_dataset,
@@ -213,6 +214,9 @@ def create_dataset(
         )
 
     create_unpaired_attributes(seed, dataset_location)
+
+    with open(dataset_location / "version.txt", "w") as version_file:
+        version_file.write(__version__)
 
 
 @click.command("unpaired", help="Create an unpaired attribute for each domains")
