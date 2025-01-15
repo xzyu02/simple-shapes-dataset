@@ -15,7 +15,7 @@ def get_alignment(
     split: str,
     domain_proportions: Mapping[frozenset[str], float],
     seed: int,
-    max_size: int | None,
+    max_size: int | None = 500_000,
 ) -> Mapping[frozenset[str], np.ndarray]:
     assert split in ["train", "val", "test"]
 
@@ -55,7 +55,7 @@ def get_aligned_datasets(
     domain_classes: Mapping[DomainDesc, type[DataDomain]],
     domain_proportions: Mapping[frozenset[str], float],
     seed: int,
-    max_size: int | None = None,
+    max_size: int | None = 500_000,
     transforms: Mapping[str, Callable[[Any], Any]] | None = None,
     domain_args: Mapping[str, Any] | None = None,
 ) -> dict[frozenset[str], Subset]:

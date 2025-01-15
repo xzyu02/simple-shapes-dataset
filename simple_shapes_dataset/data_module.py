@@ -33,7 +33,7 @@ class SimpleShapesDataModule(LightningDataModule):
         domain_classes: Mapping[DomainDesc, type[DataDomain]],
         domain_proportions: Mapping[frozenset[str], float],
         batch_size: int,
-        max_train_size: int | None = None,
+        max_train_size: int | None = 500_000,
         num_workers: int = 0,
         seed: int | None = None,
         ood_seed: int | None = None,

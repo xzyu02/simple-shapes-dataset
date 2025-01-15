@@ -107,7 +107,7 @@ def create_unpaired_attributes(
 @click.option(
     "--max_train_size",
     "--ms",
-    default=None,
+    default=500_000,
     type=int,
     help="Max index to use for the train set.",
 )
@@ -133,7 +133,7 @@ def create_dataset(
     min_lightness: int,
     max_lightness: int,
     bert_path: str,
-    max_train_size: int | None,
+    max_train_size: int,
     domain_alignment: list[tuple[str, float]],
 ) -> None:
     dataset_location = Path(output_path)
