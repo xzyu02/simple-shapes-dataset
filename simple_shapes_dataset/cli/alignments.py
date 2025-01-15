@@ -18,7 +18,7 @@ def create_domain_split(
     seed: int,
     dataset_path: Path,
     domain_alignment: list[tuple[str, float]],
-    max_train_size: int | None = 500_000,
+    max_train_size: int | None = None,
 ):
     if not len(domain_alignment):
         return
@@ -66,7 +66,7 @@ def create_domain_split(
 @click.option(
     "--max_train_size",
     "--ms",
-    default=500_000,
+    default=None,
     type=int,
     help="Max index to use for the train set.",
 )
@@ -83,7 +83,7 @@ def create_domain_split(
 def add_alignment_split(
     seed: int,
     dataset_path: str,
-    max_train_size: int,
+    max_train_size: int | None,
     domain_alignment: list[tuple[str, float]],
 ) -> None:
     dataset_location = Path(dataset_path)
