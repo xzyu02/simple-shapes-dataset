@@ -35,7 +35,7 @@ You can download the dataset directly from:
 You can migrate the dataset format manually to be formatted exactly as
 `shimmer-ssd`(https://github.com/ruflab/shimmer-ssd) expects it with:
 ```
-shapesd migrade [-p DATASET_PATH]
+shapesd migrate [-p DATASET_PATH]
 ```
 
 ## Create dataset
