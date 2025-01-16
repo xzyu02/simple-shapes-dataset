@@ -8,10 +8,7 @@ from tqdm import tqdm
 
 from simple_shapes_dataset.cli.migration import migrate_dataset
 
-# DATASET_URL = "https://zenodo.org/records/8112838/files/simple_shapes_dataset.tar.gz"
-DATASET_URL = (
-    "https://zenodo.org/records/14289631/files/simple_shapes_checkpoints.tar.gz"
-)
+DATASET_URL = "https://zenodo.org/records/8112838/files/simple_shapes_dataset.tar.gz"
 
 
 def downlad_file(url: str, path: Path):
