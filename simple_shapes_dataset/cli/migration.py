@@ -33,10 +33,18 @@ def update_0p1_to_1p0(dataset_path: Path, dry_run: bool):
         (dataset_path / "test_bert-base-uncased.npy").rename(
             dataset_path / "test_latent.npy"
         )
+    if (dataset_path / "bert-base-uncased_mean.npy").exists():
         (dataset_path / "bert-base-uncased_mean.npy").rename(
             dataset_path / "latent_mean.npy"
         )
         (dataset_path / "bert-base-uncased_std.npy").rename(
+            dataset_path / "latent_std.npy"
+        )
+    if (dataset_path / "mean_bert-base-uncased.npy").exists():
+        (dataset_path / "mean_bert-base-uncased.npy").rename(
+            dataset_path / "latent_mean.npy"
+        )
+        (dataset_path / "std_bert-base-uncased.npy").rename(
             dataset_path / "latent_std.npy"
         )
 
