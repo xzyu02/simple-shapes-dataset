@@ -13,7 +13,10 @@ from simple_shapes_dataset.version import __version__
 def update_0p1_to_1p0(dataset_path: Path, dry_run: bool):
     click.echo("Migrating from 0.1.0 to 1.0.0")
     click.echo("Updating split format...")
-    update_alignment_split_format(str(dataset_path.resolve()), dry_run)
+    if (dataset_path / "domain_splits").exists() and not (
+        dataset_path / "domain_splits_v2"
+    ).exists():
+        update_alignment_split_format(dataset_path, dry_run)
     # Add unpaired attributes
     if not (dataset_path / "train_unpaired.npy").exists():
         click.echo("Adding unpaired attributes using seed [0]...")

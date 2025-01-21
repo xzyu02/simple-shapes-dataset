@@ -161,7 +161,7 @@ def list_domain_alignment(dataset_path: str, split: str, seed: str) -> None:
     click.echo(print_table(table))
 
 
-def update_alignment_split_format(dataset_path: str, dry_run: bool) -> None:
+def update_alignment_split_format(dataset_path: str | Path, dry_run: bool) -> None:
     dataset_location = Path(dataset_path)
     assert dataset_location.exists()
     split_path = dataset_location / "domain_splits_v2"
