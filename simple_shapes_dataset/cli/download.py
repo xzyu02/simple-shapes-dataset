@@ -22,8 +22,6 @@ def downlad_file(url: str, path: Path):
             for data in tqdm(response.iter_content(chunk_size=block_size)):
                 progress_bar.update(len(data))
                 handle.write(data)
-            if total_size != 0 and progress_bar.n != total_size:
-                raise RuntimeError("Could not download file.")
 
 
 @click.command("download", help="Download precomputed dataset")
