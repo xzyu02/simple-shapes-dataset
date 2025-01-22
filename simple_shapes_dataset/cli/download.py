@@ -68,4 +68,4 @@ def download_dataset(path: Path, force: bool, no_migration: bool):
     archive_path.unlink()
 
     if not no_migration:
-        migrate_dataset(path, False)
+        migrate_dataset(dataset_path, False)
