@@ -49,25 +49,28 @@ def update_0p1_to_1p0(dataset_path: Path, dry_run: bool):
         )
 
     # Only keep the first 500,00 samples
-    train_labels = np.load(dataset_path / "train_latent.npy")
-    old_length = train_labels.shape[0]
+    old_length = np.load(dataset_path / "train_labels.npy").shape[0]
     if old_length == 1_000_000 and not dry_run:
         click.echo(
             "Detected oversized dataset. Keeping only the first 500,000 samples."
         )
+        train_labels = np.load(dataset_path / "train_labels.npy")
         train_labels = train_labels[:500_000]
+        np.save(dataset_path / "train_labels.npy", train_labels)
+
         train_unpaired_attr = np.load(dataset_path / "train_unpaired.npy")[:500_000]
         np.save(dataset_path / "train_unpaired.npy", train_unpaired_attr)
 
-        np.save(dataset_path / "train_labels.npy", train_labels)
         train_captions = np.load(
             dataset_path / "train_captions.npy", allow_pickle=True
         )[:500_000]
         np.save(dataset_path / "train_captions.npy", train_captions)
+
         train_captions_choices = np.load(
             dataset_path / "train_caption_choices.npy", allow_pickle=True
         )[:500_000]
         np.save(dataset_path / "train_caption_choices.npy", train_captions_choices)
+
         train_bert_latents = np.load(dataset_path / "train_latent.npy")[:500_000]
         np.save(dataset_path / "train_latent.npy", train_bert_latents)
 
