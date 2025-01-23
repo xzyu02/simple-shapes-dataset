@@ -48,6 +48,8 @@ def downlad_file(url: str, path: Path):
     ),
 )
 def download_dataset(path: Path, force: bool, no_migration: bool):
+    click.echo(f"Downloading in {str(path)}.")
+
     dataset_path = path / "simple_shapes_dataset"
     archive_path = path / "simple_shapes_dataset.tar.gz"
     if dataset_path.exists() and not force:
