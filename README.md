@@ -7,7 +7,7 @@ First clone and cd to the downloaded directory.
 Using poetry:
 
 ```
-poetry install
+poetry sync [--with dev]
 ```
 
 With pip:
