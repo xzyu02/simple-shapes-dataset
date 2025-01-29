@@ -140,7 +140,7 @@ numpy = "^1.26"
 
 [package.source]
 type = "git"
-url = "https://github.com/bdvllrs/attributes-to-language.git"
+url = "https://github.com/ruflab/attributes-to-language.git"
 reference = "v0.4.0"
 resolved_reference = "c3d3c6823a1a8d968a71f786a2384a8b14c3be77"
 
@@ -2937,4 +2937,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.11"
-content-hash = "2d0b5f6a10e4a095cdf1f534413646a9a8a739a754b95b0ca93457a2a69b7c94"
+content-hash = "2be7a737bbe75b6cb93045ebe924e3b58cabdb37fb47c999c8e04ed56826ec34"

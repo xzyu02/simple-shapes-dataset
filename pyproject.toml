@@ -16,7 +16,7 @@ dependencies = [
     "tqdm (>=4.66.3,<4.67.0)",
     "transformers (>=4.30.2,<5.0.0)",
     "opencv-python (>=4.7.0.72,<5.0.0.0)",
-    "attributes-to-language @ git+https://github.com/bdvllrs/attributes-to-language.git@v0.4.0",
+    "attributes-to-language @ git+https://github.com/ruflab/attributes-to-language.git@v0.4.0",
     "pillow (>=10.3.0,<11.0.0)",
     "numpy (>=1.26,<2.0)",
     "torch (>=2.0.1,<2.6.0)",
