@@ -92,7 +92,20 @@ class SimpleShapesImages(DataDomain):
         self.image_path = (self.dataset_path / self.split).resolve()
         self.transform = transform
         self.additional_args = additional_args
-        self.dataset_size = len(list(self.image_path.iterdir()))
+        self._dataset_size: int | None = None
+
+    @property
+    def dataset_size(self) -> int:
+        if self._dataset_size is None:
+            self._dataset_size = self._get_dataset_length()
+        return self._dataset_size
+
+    def _get_dataset_length(self) -> int:
+        size = 0
+        for file in self.image_path.iterdir():
+            if file.suffix == ".png":
+                size += 1
+        return size
 
     def __len__(self) -> int:
         return self.dataset_size
