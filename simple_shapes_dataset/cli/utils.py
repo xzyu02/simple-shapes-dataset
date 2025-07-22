@@ -303,15 +303,15 @@ def generate_dataset(
     max_lightness: int,
     imsize: int,
     classes: np.ndarray | None = None,
-    scale_image_shape_ratio: float = 0.0,
+    scale_canvas_shape_ratio: float = 0.0,
 ) -> Dataset:
     if classes is None:
         classes = generate_class(n_samples)
         
-    if scale_image_shape_ratio > 0:
+    if scale_canvas_shape_ratio > 0:
         # Scale the shape sizes proportionally to image size
         # Default 32x32 image has scales 7-14, so we scale proportionally
-        scale_ratio = (imsize / 32.0) * scale_image_shape_ratio
+        scale_ratio = (imsize / 32.0) * scale_canvas_shape_ratio
         min_scale = int(min_scale * scale_ratio)
         max_scale = int(max_scale * scale_ratio)
 

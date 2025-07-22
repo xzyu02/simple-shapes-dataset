@@ -99,7 +99,7 @@ def create_unpaired_attributes(
     help="Maximum lightness for the shapes' HSL color. Higher values are lighter.",
 )
 @click.option(
-    "--scale_image_shape_ratio",
+    "--scale_canvas_shape_ratio",
     default=0.0,
     type=float,
     help="Ratio to scale shape sizes with image size. 1.0 = proportional scaling, 0.0 = no scaling.",
@@ -146,7 +146,7 @@ def create_dataset(
     max_scale: int,
     min_lightness: int,
     max_lightness: int,
-    scale_image_shape_ratio: float,
+    scale_canvas_shape_ratio: float,
     background_color: str,
     bert_path: str,
     max_train_size: int | None,
@@ -164,7 +164,7 @@ def create_dataset(
         min_lightness,
         max_lightness,
         img_size,
-        scale_image_shape_ratio=scale_image_shape_ratio,
+        scale_canvas_shape_ratio=scale_canvas_shape_ratio,
     )
     val_labels = generate_dataset(
         num_val_examples,
@@ -173,7 +173,7 @@ def create_dataset(
         min_lightness,
         max_lightness,
         img_size,
-        scale_image_shape_ratio=scale_image_shape_ratio,
+        scale_canvas_shape_ratio=scale_canvas_shape_ratio,
     )
     test_labels = generate_dataset(
         num_test_examples,
@@ -182,7 +182,7 @@ def create_dataset(
         min_lightness,
         max_lightness,
         img_size,
-        scale_image_shape_ratio=scale_image_shape_ratio,
+        scale_canvas_shape_ratio=scale_canvas_shape_ratio,
     )
 
     print("Save labels...")
