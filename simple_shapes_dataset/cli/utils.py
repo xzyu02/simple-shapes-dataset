@@ -151,6 +151,78 @@ def get_square_patch(
     return patch
 
 
+def get_star_patch(
+    location: np.ndarray,
+    scale: int,
+    rotation: float,
+    color: np.ndarray,
+) -> patches.Polygon:
+    x, y = location[0], location[1]
+    origin = np.array([[x, y]])
+    # 5-pointed star coordinates centered at (0.5, 0.5)
+    coordinates = np.array([
+        [0.5, 1.0],      # top point
+        [0.62, 0.7],     # top right inner
+        [0.85, 0.7],     # top right outer
+        [0.68, 0.5],     # right inner
+        [0.75, 0.25],    # bottom right outer
+        [0.5, 0.4],      # bottom inner
+        [0.25, 0.25],    # bottom left outer
+        [0.32, 0.5],     # left inner
+        [0.15, 0.7],     # top left outer
+        [0.38, 0.7],     # top left inner
+    ])
+    patch = patches.Polygon(
+        get_transformed_coordinates(coordinates, origin, scale, rotation),
+        facecolor=color,
+    )
+    return patch
+
+
+def get_heart_patch(
+    location: np.ndarray, scale: int, rotation: float, color: np.ndarray
+) -> patches.PathPatch:
+    x, y = location[0], location[1]
+    origin = np.array([[x, y]])
+    # Heart shape using Bezier curves
+    coordinates = np.array([
+        [0.5, 0.2],      # bottom point
+        [0.5, 0.4],      # bottom control
+        [0.2, 0.6],      # left bottom curve
+        [0.1, 0.8],      # left top curve
+        [0.2, 0.9],      # left top
+        [0.35, 0.85],    # left top inner
+        [0.5, 0.7],      # center
+        [0.65, 0.85],    # right top inner
+        [0.8, 0.9],      # right top
+        [0.9, 0.8],      # right top curve
+        [0.8, 0.6],      # right bottom curve
+        [0.5, 0.4],      # bottom control
+        [0.5, 0.2],      # back to bottom
+    ])
+    codes = [
+        mpath.Path.MOVETO,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+        mpath.Path.CURVE4,
+    ]
+    path = mpath.Path(
+        get_transformed_coordinates(coordinates, origin, scale, rotation),
+        codes,
+    )
+    patch = patches.PathPatch(path, facecolor=color)
+    return patch
+
+
 def generate_image(
     ax: Axes,
     cls: int,
@@ -172,6 +244,10 @@ def generate_image(
         patch = get_circle_patch(location, scale, rotation, color)
     elif cls == 4:
         patch = get_square_patch(location, scale, rotation, color)
+    elif cls == 5:
+        patch = get_star_patch(location, scale, rotation, color)
+    elif cls == 6:
+        patch = get_heart_patch(location, scale, rotation, color)
     else:
         raise ValueError("Class does not exist.")
 
@@ -217,7 +293,7 @@ def generate_location(n_samples: int, max_scale: int, imsize: int) -> np.ndarray
 
 
 def generate_class(n_samples: int) -> np.ndarray:
-    return np.random.randint(5, size=n_samples)
+    return np.random.randint(7, size=n_samples)
 
 
 def generate_unpaired_attr(n_samples: int) -> np.ndarray:
