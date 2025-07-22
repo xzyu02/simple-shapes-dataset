@@ -50,6 +50,25 @@ shapes_writer = OptionsWriter(
             "arrow-shaped polygon",
             "deformed square shape",
         ],
+        3: ["circle",
+            "round shape",
+            "circular object",
+        ],
+        4: ["square",
+            "rectangle",
+            "four-sided rectangle",
+            "box shape"
+        ],
+        5: ["star",
+            "five-pointed star",
+            "star shape",
+            "asterisk"
+        ],
+        6: ["heart",
+            "heart shape",
+            "valentine shape",
+            "love symbol"
+        ],
     },
 )
 
