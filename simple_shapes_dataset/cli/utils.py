@@ -117,6 +117,40 @@ def get_egg_patch(
     return patch
 
 
+def get_circle_patch(
+    location: np.ndarray,
+    scale: int,
+    rotation: float,
+    color: np.ndarray,
+) -> patches.Circle:
+    x, y = location[0], location[1]
+    # For circles, rotation doesn't affect the shape, but we keep the parameter for consistency
+    radius = scale / 2
+    patch = patches.Circle(
+        (x, y),
+        radius,
+        facecolor=color,
+    )
+    return patch
+
+
+def get_square_patch(
+    location: np.ndarray,
+    scale: int,
+    rotation: float,
+    color: np.ndarray,
+) -> patches.Polygon:
+    x, y = location[0], location[1]
+    origin = np.array([[x, y]])
+    # Square coordinates centered at (0.5, 0.5)
+    coordinates = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
+    patch = patches.Polygon(
+        get_transformed_coordinates(coordinates, origin, scale, rotation),
+        facecolor=color,
+    )
+    return patch
+
+
 def generate_image(
     ax: Axes,
     cls: int,
@@ -134,6 +168,10 @@ def generate_image(
         patch = get_egg_patch(location, scale, rotation, color)
     elif cls == 2:
         patch = get_triangle_patch(location, scale, rotation, color)
+    elif cls == 3:
+        patch = get_circle_patch(location, scale, rotation, color)
+    elif cls == 4:
+        patch = get_square_patch(location, scale, rotation, color)
     else:
         raise ValueError("Class does not exist.")
 
@@ -179,7 +217,7 @@ def generate_location(n_samples: int, max_scale: int, imsize: int) -> np.ndarray
 
 
 def generate_class(n_samples: int) -> np.ndarray:
-    return np.random.randint(3, size=n_samples)
+    return np.random.randint(5, size=n_samples)
 
 
 def generate_unpaired_attr(n_samples: int) -> np.ndarray:
