@@ -182,24 +182,24 @@ def get_star_patch(
 def get_heart_patch(
     location: np.ndarray, scale: int, rotation: float, color: np.ndarray
 ) -> patches.PathPatch:
+    """
+    Creates a wider heart-shaped matplotlib patch using Bézier curves.
+    """
     x, y = location[0], location[1]
     origin = np.array([[x, y]])
-    # Heart shape using Bezier curves
+
+    # Coordinates adjusted for a wider heart shape
     coordinates = np.array([
-        [0.5, 0.2],      # bottom point
-        [0.5, 0.4],      # bottom control
-        [0.2, 0.6],      # left bottom curve
-        [0.1, 0.8],      # left top curve
-        [0.2, 0.9],      # left top
-        [0.35, 0.85],    # left top inner
-        [0.5, 0.7],      # center
-        [0.65, 0.85],    # right top inner
-        [0.8, 0.9],      # right top
-        [0.9, 0.8],      # right top curve
-        [0.8, 0.6],      # right bottom curve
-        [0.5, 0.4],      # bottom control
-        [0.5, 0.2],      # back to bottom
+        [0.5, 0.2],   # 1. Bottom tip (no change)
+        [-0.1, 0.6],  # 2. Left control point 1 (moved left from 0.0)
+        [0.2, 1.0],   # 3. Left control point 2 (moved left from 0.3)
+        [0.5, 0.7],   # 4. Top center dip (no change)
+        [0.8, 1.0],   # 5. Right control point 1 (moved right from 0.7)
+        [1.1, 0.6],   # 6. Right control point 2 (moved right from 1.0)
+        [0.5, 0.2],   # 7. Bottom tip (no change)
     ])
+
+    # Path codes remain the same
     codes = [
         mpath.Path.MOVETO,
         mpath.Path.CURVE4,
@@ -208,20 +208,14 @@ def get_heart_patch(
         mpath.Path.CURVE4,
         mpath.Path.CURVE4,
         mpath.Path.CURVE4,
-        mpath.Path.CURVE4,
-        mpath.Path.CURVE4,
-        mpath.Path.CURVE4,
-        mpath.Path.CURVE4,
-        mpath.Path.CURVE4,
-        mpath.Path.CURVE4,
     ]
+
     path = mpath.Path(
         get_transformed_coordinates(coordinates, origin, scale, rotation),
         codes,
     )
     patch = patches.PathPatch(path, facecolor=color)
     return patch
-
 
 def generate_image(
     ax: Axes,
@@ -293,6 +287,7 @@ def generate_location(n_samples: int, max_scale: int, imsize: int) -> np.ndarray
 
 
 def generate_class(n_samples: int) -> np.ndarray:
+    # return np.full(n_samples, 6)  # Always generate hearts (class 6)
     return np.random.randint(7, size=n_samples)
 
 
@@ -308,9 +303,18 @@ def generate_dataset(
     max_lightness: int,
     imsize: int,
     classes: np.ndarray | None = None,
+    scale_image_shape_ratio: float = 0.0,
 ) -> Dataset:
     if classes is None:
         classes = generate_class(n_samples)
+        
+    if scale_image_shape_ratio > 0:
+        # Scale the shape sizes proportionally to image size
+        # Default 32x32 image has scales 7-14, so we scale proportionally
+        scale_ratio = (imsize / 32.0) * scale_image_shape_ratio
+        min_scale = int(min_scale * scale_ratio)
+        max_scale = int(max_scale * scale_ratio)
+
     sizes = generate_scale(n_samples, min_scale, max_scale)
     locations = generate_location(n_samples, max_scale, imsize)
     rotation = generate_rotation(n_samples)
@@ -327,8 +331,13 @@ def generate_dataset(
     )
 
 
-def save_dataset(path_root: Path, dataset: Dataset, imsize: int) -> None:
-    dpi = 1
+def save_dataset(
+    path_root: Path,
+    dataset: Dataset,
+    imsize: int,
+    background_color: str = "black"
+) -> None:
+    dpi = 1 # I made change here to make shapes more clear, in good quality, default was 1
     enumerator = tqdm(
         enumerate(
             zip(
@@ -348,7 +357,22 @@ def save_dataset(path_root: Path, dataset: Dataset, imsize: int) -> None:
         fig, ax = plt.subplots(figsize=(imsize / dpi, imsize / dpi), dpi=dpi)
         ax = cast(plt.Axes, ax)
         generate_image(ax, cls, location, size, rotation, color, imsize)
-        ax.set_facecolor("black")
+        
+        # Set background color based on parameter
+        if background_color == "black":
+            ax.set_facecolor("black")
+        elif background_color == "blue":
+            ax.set_facecolor("navy")
+        elif background_color == "gray":
+            ax.set_facecolor("gray")
+        elif background_color == "noise":
+            # Create gaussian noise background
+            noise = np.random.normal(0.3, 0.1, (imsize, imsize, 3))
+            noise = np.clip(noise, 0, 1)  # Clip to valid color range
+            ax.imshow(noise, extent=[0, imsize, 0, imsize], aspect='equal')
+        else:
+            ax.set_facecolor("black")  # Default fallback
+            
         plt.tight_layout(pad=0)
         plt.savefig(path_file, dpi=dpi, format="png")
         plt.close(fig)

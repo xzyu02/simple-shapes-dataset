@@ -99,6 +99,19 @@ def create_unpaired_attributes(
     help="Maximum lightness for the shapes' HSL color. Higher values are lighter.",
 )
 @click.option(
+    "--scale_image_shape_ratio",
+    default=0.0,
+    type=float,
+    help="Ratio to scale shape sizes with image size. 1.0 = proportional scaling, 0.0 = no scaling.",
+)
+@click.option(
+    "--background_color",
+    "--bg",
+    default="black",
+    type=click.Choice(["black", "blue", "gray", "noise"]),
+    help="Background color for images: black, blue, gray, or noise (gaussian noise).",
+)
+@click.option(
     "--bert_path",
     "-b",
     default="bert-base-uncased",
@@ -133,6 +146,8 @@ def create_dataset(
     max_scale: int,
     min_lightness: int,
     max_lightness: int,
+    scale_image_shape_ratio: float,
+    background_color: str,
     bert_path: str,
     max_train_size: int | None,
     domain_alignment: list[tuple[str, float]],
@@ -149,6 +164,7 @@ def create_dataset(
         min_lightness,
         max_lightness,
         img_size,
+        scale_image_shape_ratio=scale_image_shape_ratio,
     )
     val_labels = generate_dataset(
         num_val_examples,
@@ -157,6 +173,7 @@ def create_dataset(
         min_lightness,
         max_lightness,
         img_size,
+        scale_image_shape_ratio=scale_image_shape_ratio,
     )
     test_labels = generate_dataset(
         num_test_examples,
@@ -165,6 +182,7 @@ def create_dataset(
         min_lightness,
         max_lightness,
         img_size,
+        scale_image_shape_ratio=scale_image_shape_ratio,
     )
 
     print("Save labels...")
@@ -176,13 +194,13 @@ def create_dataset(
 
     print("Saving training set...")
     (dataset_location / "train").mkdir(exist_ok=True)
-    save_dataset(dataset_location / "train", train_labels, img_size)
+    save_dataset(dataset_location / "train", train_labels, img_size, background_color)
     print("Saving validation set...")
     (dataset_location / "val").mkdir(exist_ok=True)
-    save_dataset(dataset_location / "val", val_labels, img_size)
+    save_dataset(dataset_location / "val", val_labels, img_size, background_color)
     print("Saving test set...")
     (dataset_location / "test").mkdir(exist_ok=True)
-    save_dataset(dataset_location / "test", test_labels, img_size)
+    save_dataset(dataset_location / "test", test_labels, img_size, background_color)
 
     print("Saving captions...")
     for split in ["train", "val", "test"]:
