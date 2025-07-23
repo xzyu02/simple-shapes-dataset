@@ -67,7 +67,7 @@ class UnnormalizeAttributes:
 
 def attribute_to_tensor(attr: Attribute) -> list[torch.Tensor]:
     tensors = [
-        F.one_hot(attr.category, num_classes=3),
+        F.one_hot(attr.category, num_classes=7),
         torch.cat(
             [
                 attr.x.unsqueeze(0),

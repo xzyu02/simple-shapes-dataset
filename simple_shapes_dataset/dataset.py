@@ -54,6 +54,17 @@ class SimpleShapesDataset(Dataset):
     Dataset class to obtain a SimpleShapesDataset.
     """
 
+    # Class number to shape name mapping
+    CLASS_TO_NAME = {
+        0: "diamond",
+        1: "egg",
+        2: "triangle",
+        3: "circle",
+        4: "square",
+        5: "star",
+        6: "heart",
+    }
+
     def __init__(
         self,
         dataset_path: str | Path,
@@ -128,3 +139,23 @@ class SimpleShapesDataset(Dataset):
         return {
             domain_name: domain[index] for domain_name, domain in self.domains.items()
         }
+
+    def get_class_name(self, class_id: int) -> str:
+        """Get the shape name for a given class ID.
+
+        Args:
+            class_id (int): The class ID (0-6)
+
+        Returns:
+            str: The name of the shape corresponding to the class ID
+        """
+        return self.CLASS_TO_NAME.get(class_id, "unknown")
+
+    @classmethod
+    def get_all_class_names(cls) -> dict[int, str]:
+        """Get all class ID to name mappings.
+
+        Returns:
+            dict[int, str]: Dictionary mapping class IDs to shape names
+        """
+        return cls.CLASS_TO_NAME.copy()

@@ -1,6 +1,6 @@
 [project]
 name = "simple-shapes-dataset"
-version = "1.0.0"
+version = "1.0.1"
 description = "The Simple Shapes Dataset used in the Global Workspace Paper"
 authors = [
     { name = "Benjamin Devillers", email = "bdvllrs@gmail.com" },
