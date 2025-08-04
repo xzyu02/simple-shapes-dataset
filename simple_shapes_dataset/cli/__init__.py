@@ -10,6 +10,7 @@ from .create_dataset import (
     create_unpaired_attributes,
     unpaired_attributes_command,
 )
+from .create_multi_shapes_dataset import create_multi_shapes_dataset
 from .odd_one_out import create_odd_one_out_dataset
 from .ood_splits import (
     BinsBoundary,
@@ -53,6 +54,7 @@ def cli():
 
 
 cli.add_command(create_dataset)
+cli.add_command(create_multi_shapes_dataset)
 cli.add_command(alignment_group)
 cli.add_command(unpaired_attributes_command)
 cli.add_command(create_ood_split)
