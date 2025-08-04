@@ -11,6 +11,7 @@ from .create_dataset import (
     unpaired_attributes_command,
 )
 from .create_multi_shapes_dataset import create_multi_shapes_dataset
+from .multi_shapes import *  # Import all multi-shapes functionality
 from .odd_one_out import create_odd_one_out_dataset
 from .ood_splits import (
     BinsBoundary,

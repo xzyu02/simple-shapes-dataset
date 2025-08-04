@@ -12,7 +12,7 @@ from simple_shapes_dataset.text import composer
 from simple_shapes_dataset.version import __version__
 
 from .utils import save_bert_latents
-from .utils_multi_shapes import (
+from .multi_shapes import (
     MultiShapesDataset,
     generate_multi_shapes_dataset,
     save_multi_shapes_dataset,
@@ -87,7 +87,21 @@ def create_unpaired_attributes_multi(
     "--spc",
     default=2,
     type=int,
-    help="Number of shapes per canvas/image",
+    help="Number of shapes per canvas/image (fixed mode) or max shapes (variable mode)",
+)
+@click.option(
+    "--variable_shapes",
+    "--var",
+    is_flag=True,
+    default=False,
+    help="Enable variable number of shapes per canvas",
+)
+@click.option(
+    "--min_shapes_per_canvas",
+    "--min_spc",
+    default=1,
+    type=int,
+    help="Minimum shapes per canvas when using variable_shapes mode",
 )
 @click.option(
     "--min_scale",
@@ -148,6 +162,8 @@ def create_multi_shapes_dataset(
     num_val_examples: int,
     num_test_examples: int,
     shapes_per_canvas: int,
+    variable_shapes: bool,
+    min_shapes_per_canvas: int,
     min_scale: int,
     max_scale: int,
     min_lightness: int,
@@ -170,8 +186,14 @@ def create_multi_shapes_dataset(
         actual_max_scale = int(max_scale * scale_ratio)
 
     # Validate canvas capacity before generation
+    max_shapes_for_validation = shapes_per_canvas
+    if variable_shapes:
+        print(f"Variable shapes mode: {min_shapes_per_canvas}-{shapes_per_canvas} shapes per canvas")
+    else:
+        print(f"Fixed shapes mode: {shapes_per_canvas} shapes per canvas")
+    
     is_valid, max_capacity, message = validate_canvas_capacity(
-        img_size, shapes_per_canvas, actual_min_scale, actual_max_scale
+        img_size, max_shapes_for_validation, actual_min_scale, actual_max_scale
     )
     
     print(f"Canvas capacity check: {message}")
@@ -183,42 +205,51 @@ def create_multi_shapes_dataset(
 
     np.random.seed(seed)
 
-    print(f"Generating multi-shapes dataset with {shapes_per_canvas} shapes per canvas...")
+    print(f"Generating multi-shapes dataset...")
     
     print("Generating training data...")
     train_dataset = generate_multi_shapes_dataset(
         num_train_examples,
-        min_scale,
-        max_scale,
+        actual_min_scale,
+        actual_max_scale,
         min_lightness,
         max_lightness,
         img_size,
         shapes_per_canvas,
         scale_canvas_shape_ratio,
+        variable_shapes,
+        min_shapes_per_canvas,
+        shapes_per_canvas,  # max_shapes_per_canvas
     )
     
     print("Generating validation data...")
     val_dataset = generate_multi_shapes_dataset(
         num_val_examples,
-        min_scale,
-        max_scale,
+        actual_min_scale,
+        actual_max_scale,
         min_lightness,
         max_lightness,
         img_size,
         shapes_per_canvas,
         scale_canvas_shape_ratio,
+        variable_shapes,
+        min_shapes_per_canvas,
+        shapes_per_canvas,  # max_shapes_per_canvas
     )
     
     print("Generating test data...")
     test_dataset = generate_multi_shapes_dataset(
         num_test_examples,
-        min_scale,
-        max_scale,
+        actual_min_scale,
+        actual_max_scale,
         min_lightness,
         max_lightness,
         img_size,
         shapes_per_canvas,
         scale_canvas_shape_ratio,
+        variable_shapes,
+        min_shapes_per_canvas,
+        shapes_per_canvas,  # max_shapes_per_canvas
     )
 
     print("Saving labels...")
@@ -278,9 +309,14 @@ def create_multi_shapes_dataset(
     # Save metadata
     metadata = {
         "shapes_per_canvas": shapes_per_canvas,
+        "variable_shapes": variable_shapes,
+        "min_shapes_per_canvas": min_shapes_per_canvas if variable_shapes else shapes_per_canvas,
+        "max_shapes_per_canvas": shapes_per_canvas,
         "img_size": img_size,
         "min_scale": min_scale,
         "max_scale": max_scale,
+        "actual_min_scale": actual_min_scale,
+        "actual_max_scale": actual_max_scale,
         "background_color": background_color,
         "version": __version__,
     }
@@ -293,4 +329,7 @@ def create_multi_shapes_dataset(
         version_file.write(__version__)
 
     print(f"Multi-shapes dataset created successfully at {dataset_location}")
-    print(f"Dataset contains {shapes_per_canvas} shapes per canvas")
+    if variable_shapes:
+        print(f"Dataset contains {min_shapes_per_canvas}-{shapes_per_canvas} shapes per canvas (variable)")
+    else:
+        print(f"Dataset contains {shapes_per_canvas} shapes per canvas (fixed)")

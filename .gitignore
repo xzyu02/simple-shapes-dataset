@@ -169,3 +169,8 @@ data/
 wandb/
 config/local/
 config/local.yaml
+
+# Jupyter and testing files
+jupyter-log.txt
+jupyter.sh
+testing.ipynb

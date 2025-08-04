@@ -1,0 +1,29 @@
+"""Multi-shapes dataset generation modules."""
+
+from .collision import (
+    calculate_shape_bounds,
+    check_collision,
+    estimate_max_shapes_capacity,
+    generate_non_colliding_locations,
+    validate_canvas_capacity,
+)
+from .dataset import MultiShapesDataset, generate_multi_shapes_dataset
+from .io import load_multi_shapes_labels, save_multi_shapes_labels
+from .rendering import save_multi_shapes_dataset
+
+__all__ = [
+    # Collision detection
+    "calculate_shape_bounds",
+    "check_collision",
+    "estimate_max_shapes_capacity", 
+    "generate_non_colliding_locations",
+    "validate_canvas_capacity",
+    # Dataset
+    "MultiShapesDataset",
+    "generate_multi_shapes_dataset",
+    # I/O
+    "load_multi_shapes_labels",
+    "save_multi_shapes_labels",
+    # Rendering
+    "save_multi_shapes_dataset",
+]
