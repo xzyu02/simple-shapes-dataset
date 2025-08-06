@@ -61,7 +61,7 @@ def load_multi_shapes_labels(path_root: Path) -> MultiShapesDataset:
         MultiShapesDataset reconstructed from labels
     """
     labels = np.load(path_root)
-    
+
     # Try to load num_shapes separately if it exists
     num_shapes_path = path_root.parent / (path_root.stem + "_num_shapes.npy")
     if num_shapes_path.exists():
@@ -70,13 +70,13 @@ def load_multi_shapes_labels(path_root: Path) -> MultiShapesDataset:
         # Fallback: compute from labels
         canvas_indices = labels[:, 0].astype(int)
         num_shapes = np.bincount(canvas_indices)
-    
+
     # Determine dimensions
     canvas_indices = labels[:, 0].astype(int)
     shape_indices = labels[:, 1].astype(int)
     n_canvases = int(canvas_indices.max() + 1)
     max_shapes_per_canvas = int(shape_indices.max() + 1)
-    
+
     # Initialize arrays
     classes = np.zeros((n_canvases, max_shapes_per_canvas), dtype=np.int32)
     locations = np.zeros((n_canvases, max_shapes_per_canvas, 2), dtype=np.int32)

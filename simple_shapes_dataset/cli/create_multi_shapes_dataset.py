@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from simple_shapes_dataset.cli.alignments import create_domain_split
 from simple_shapes_dataset.text import composer
+from simple_shapes_dataset.text.composer_multi import create_multi_shape_composer
 from simple_shapes_dataset.version import __version__
 
 from .utils import save_bert_latents
@@ -270,26 +271,34 @@ def create_multi_shapes_dataset(
     save_multi_shapes_dataset(dataset_location / "test", test_dataset, img_size, background_color)
 
     if generate_captions:
-        print("Generating captions (experimental)...")
-        print("Note: Caption generation for multi-shapes is experimental and may need adjustment")
+        print("Generating FOL-structured captions for predicate-argument structure study...")
+        print("Note: Captions encode First-Order Logic relationships for semantic analysis")
+        
+        # Create the multi-shape composer
+        multi_composer = create_multi_shape_composer(img_size)
         
         for split, dataset in [("train", train_dataset), ("val", val_dataset), ("test", test_dataset)]:
             captions = []
             choices = []
             n_canvases = dataset.classes.shape[0]
             
-            for canvas_idx in tqdm(range(n_canvases), desc=f"Generating {split} captions"):
-                # For now, just describe the first shape in each canvas
-                # TODO: Implement proper multi-shape caption generation
-                shape_data = {
-                    "shape": int(dataset.classes[canvas_idx, 0]),
-                    "rotation": dataset.rotations[canvas_idx, 0],
-                    "color": tuple(dataset.colors[canvas_idx, 0]),
-                    "size": dataset.sizes[canvas_idx, 0],
-                    "location": tuple(dataset.locations[canvas_idx, 0]),
+            for canvas_idx in tqdm(range(n_canvases), desc=f"Generating {split} FOL captions"):
+                # Get the actual number of shapes in this canvas
+                num_shapes = int(dataset.num_shapes[canvas_idx])
+                
+                # Prepare canvas data for the composer
+                canvas_data = {
+                    "classes": dataset.classes[canvas_idx],
+                    "sizes": dataset.sizes[canvas_idx], 
+                    "colors": dataset.colors[canvas_idx],
+                    "locations": dataset.locations[canvas_idx],
+                    "rotations": dataset.rotations[canvas_idx],
+                    "num_shapes": num_shapes,
                 }
-                caption, choice = composer(shape_data)
-                captions.append(f"Canvas with {shapes_per_canvas} shapes: {caption}")
+                
+                # Generate FOL-structured caption
+                caption, choice = multi_composer.generate_caption(canvas_data)
+                captions.append(caption)
                 choices.append(choice)
             
             np.save(str(dataset_location / f"{split}_captions.npy"), captions)
