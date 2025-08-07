@@ -42,10 +42,10 @@ def generate_multi_shapes_dataset(
     max_lightness: int,
     imsize: int,
     shapes_per_canvas: int = 1,
-    scale_canvas_shape_ratio: float = 0.0,
     variable_shapes: bool = False,
     min_shapes_per_canvas: int = 1,
     max_shapes_per_canvas: int | None = None,
+    even_sizes: bool = False,
 ) -> MultiShapesDataset:
     """
     Generate a dataset with multiple shapes per image.
@@ -58,10 +58,10 @@ def generate_multi_shapes_dataset(
         max_lightness: Maximum color lightness
         imsize: Image size (width and height)
         shapes_per_canvas: Fixed number of shapes per image (used when variable_shapes=False)
-        scale_canvas_shape_ratio: Ratio to scale shapes based on canvas size
         variable_shapes: If True, randomly vary the number of shapes per canvas
         min_shapes_per_canvas: Minimum shapes when variable_shapes=True
         max_shapes_per_canvas: Maximum shapes when variable_shapes=True (defaults to shapes_per_canvas)
+        even_sizes: If True, use evenly distributed sizes across small/medium/large categories
     
     Returns:
         MultiShapesDataset with generated data
@@ -69,12 +69,6 @@ def generate_multi_shapes_dataset(
     Raises:
         ValueError: If shapes_per_canvas is too large for the given canvas and shape sizes
     """
-    if scale_canvas_shape_ratio > 0:
-        # Scale the shape sizes proportionally to image size
-        scale_ratio = (imsize / 32.0) * scale_canvas_shape_ratio
-        min_scale = int(min_scale * scale_ratio)
-        max_scale = int(max_scale * scale_ratio)
-
     # Determine the maximum shapes per canvas for capacity checking and array sizing
     if variable_shapes:
         if max_shapes_per_canvas is None:
@@ -124,7 +118,13 @@ def generate_multi_shapes_dataset(
         
         # Generate all attributes for shapes in this canvas
         canvas_classes = generate_class(current_num_shapes)
-        canvas_sizes = generate_scale(current_num_shapes, min_scale, max_scale)
+        
+        if even_sizes:
+            from simple_shapes_dataset.cli.utils import generate_even_scale
+            canvas_sizes = generate_even_scale(current_num_shapes, imsize)
+        else:
+            canvas_sizes = generate_scale(current_num_shapes, min_scale, max_scale)
+            
         canvas_rotations = generate_rotation(current_num_shapes)
         canvas_colors_rgb, canvas_colors_hls = generate_color(current_num_shapes, min_lightness, max_lightness)
         canvas_unpaired = generate_unpaired_attr(current_num_shapes)
@@ -143,7 +143,11 @@ def generate_multi_shapes_dataset(
                     f"Original error: {e}"
                 )
             # Retry with slightly different sizes
-            canvas_sizes = generate_scale(current_num_shapes, min_scale, max_scale)
+            if even_sizes:
+                from simple_shapes_dataset.cli.utils import generate_even_scale
+                canvas_sizes = generate_even_scale(current_num_shapes, imsize)
+            else:
+                canvas_sizes = generate_scale(current_num_shapes, min_scale, max_scale)
             canvas_locations = generate_non_colliding_locations(
                 current_num_shapes, canvas_sizes, imsize
             )

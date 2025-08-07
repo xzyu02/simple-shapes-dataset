@@ -8,10 +8,12 @@ structure understanding in models.
 FOL Structure Examples:
 - "A red circle and a blue square" → ∃x∃y(Circle(x) ∧ Red(x) ∧ Square(y) ∧ Blue(y))
 - "A large diamond near a small heart" → ∃x∃y(Large(x) ∧ Diamond(x) ∧ Small(y) ∧ Heart(y) ∧ Near(x,y))
+
+Note: For QA generation, use the separate qa_composer module.
 """
 
 import random
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 import numpy as np
 from attributes_to_language.types import ChoicesT
 from simple_shapes_dataset.text.writers import (
@@ -30,6 +32,8 @@ class MultiShapeComposer:
     1. One-place predicates: Shape(x), Color(x), Size(x)
     2. Two-place predicates: Near(x,y), Above(x,y), LeftOf(x,y), etc.
     3. Complex noun phrases with multiple modifiers
+    
+    For QA generation, use the separate BindingQAComposer from qa_composer module.
     """
     
     def __init__(self, img_size: int = 32):
@@ -41,11 +45,11 @@ class MultiShapeComposer:
         self.far_threshold = 0.6   # Beyond 60% of image size
         
         # Size classification thresholds (as fractions of canvas dimension)
-        self.tiny_threshold = 0.15    # < 15% of canvas
-        self.small_threshold = 0.25   # < 25% of canvas
-        self.medium_threshold = 0.35  # < 35% of canvas
-        self.large_threshold = 0.45   # >= 35% of canvas
-        # anything >= 45% is "very large" or "huge"
+        # Conservative thresholds for better multi-shape scenes
+        self.small_threshold = 0.10    # < 10% of canvas
+        self.medium_threshold = 0.20   # < 20% of canvas  
+        self.large_threshold = 0.35    # < 35% of canvas
+        # anything >= 35% would be "very large" but we'll cap at large
         
         # Sentence structure templates
         self.templates = {
@@ -109,16 +113,14 @@ class MultiShapeComposer:
         """
         size_ratio = size / self.img_size
         
-        if size_ratio < self.tiny_threshold:
+        if size_ratio < self.small_threshold:
             return random.choice(["tiny", "very small"])
-        elif size_ratio < self.small_threshold:
-            return random.choice(["small", "little"])
         elif size_ratio < self.medium_threshold:
-            return random.choice(["medium", "average sized", "medium sized"])
+            return random.choice(["small", "little"])
         elif size_ratio < self.large_threshold:
-            return random.choice(["large", "big"])
+            return random.choice(["medium", "average sized", "medium sized"])
         else:
-            return random.choice(["very large", "huge", "massive"])
+            return random.choice(["large", "big"])
 
     def _get_shape_description(self, shape_idx: int, canvas_data: Dict, shape_num: int) -> Tuple[str, ChoicesT]:
         """
@@ -161,16 +163,14 @@ class MultiShapeComposer:
         """Get the size category for tracking purposes."""
         size_ratio = size / self.img_size
         
-        if size_ratio < self.tiny_threshold:
+        if size_ratio < self.small_threshold:
             return "tiny"
-        elif size_ratio < self.small_threshold:
-            return "small"
         elif size_ratio < self.medium_threshold:
-            return "medium"
+            return "small"
         elif size_ratio < self.large_threshold:
-            return "large"
+            return "medium"
         else:
-            return "very_large"
+            return "large"
 
     def _calculate_spatial_relationship(self, pos1: Tuple[int, int], pos2: Tuple[int, int]) -> str:
         """
@@ -219,16 +219,20 @@ class MultiShapeComposer:
             size_variety = "large_small"
         else:
             # Calculate size thresholds relative to canvas size
-            large_threshold_px = self.img_size * self.large_threshold
             small_threshold_px = self.img_size * self.small_threshold
+            medium_threshold_px = self.img_size * self.medium_threshold
+            large_threshold_px = self.img_size * self.large_threshold
             
-            large_shapes = sum(1 for s in sizes if s >= large_threshold_px)
             small_shapes = sum(1 for s in sizes if s <= small_threshold_px)
+            medium_shapes = sum(1 for s in sizes if small_threshold_px < s <= medium_threshold_px)
+            large_shapes = sum(1 for s in sizes if medium_threshold_px < s <= large_threshold_px)
             
-            if large_shapes == num_shapes:
-                size_variety = "multiple_large"
-            elif small_shapes == num_shapes:
+            if small_shapes == num_shapes:
                 size_variety = "multiple_small"
+            elif large_shapes == num_shapes:
+                size_variety = "multiple_large"
+            else:
+                size_variety = "mixed"
         
         # Spatial arrangement analysis
         if num_shapes >= 3:
@@ -491,10 +495,27 @@ if __name__ == "__main__":
         "num_shapes": 2,
     }
     
-    # Generate several captions
+    print("=== CAPTION GENERATION EXAMPLES ===")
     print("Example captions:")
-    for i in range(5):
+    for i in range(3):
         caption, choices = composer.generate_caption(test_canvas)
         print(f"{i+1}. {caption}")
+        print(f"   Strategy: {choices.get('template', 'unknown')}")
         print(f"   Choices: {choices}")
         print()
+    
+    print("\n=== SIZE RANGE RECOMMENDATIONS ===")
+    print(f"Canvas size: {composer.img_size}x{composer.img_size}")
+    print("Size thresholds for classification:")
+    print(f"  Small: < {composer.small_threshold:.0%} of canvas")
+    print(f"  Medium: < {composer.medium_threshold:.0%} of canvas") 
+    print(f"  Large: < {composer.large_threshold:.0%} of canvas")
+    
+    # Test with different canvas sizes
+    print(f"\n=== COMPARISON ACROSS CANVAS SIZES ===")
+    for canvas_size in [32, 64, 128, 224]:
+        test_composer = create_multi_shape_composer(canvas_size)
+        small_px = int(canvas_size * test_composer.small_threshold)
+        medium_px = int(canvas_size * test_composer.medium_threshold)
+        large_px = int(canvas_size * test_composer.large_threshold)
+        print(f"  {canvas_size:3d}x{canvas_size:<3d}: small<{small_px:2d}px, medium<{medium_px:2d}px, large<{large_px:2d}px")

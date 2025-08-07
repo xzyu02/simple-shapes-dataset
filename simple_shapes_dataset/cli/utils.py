@@ -258,6 +258,53 @@ def generate_scale(n_samples: int, min_val: int, max_val: int) -> np.ndarray:
     return np.random.randint(min_val, max_val + 1, n_samples)
 
 
+def generate_even_scale(n_samples: int, img_size: int) -> np.ndarray:
+    """
+    Generate evenly distributed shape sizes across 3 categories.
+    
+    Args:
+        n_samples: Number of shapes to generate
+        img_size: Canvas size
+    
+    Returns:
+        Array of shape sizes evenly distributed across small/medium/large
+    """
+    # Simple 3 size ranges based on canvas size
+    small_min = max(3, int(img_size * 0.05))   # 5% minimum  
+    small_max = int(img_size * 0.10)           # 10%
+    medium_min = int(img_size * 0.15)          # 15%
+    medium_max = int(img_size * 0.20)          # 20%
+    large_min = int(img_size * 0.20)           # 20%
+    large_max = int(img_size * 0.35)           # 35%
+    
+    # Divide shapes evenly across 3 categories
+    shapes_per_category = n_samples // 3
+    remaining = n_samples % 3
+    
+    sizes = []
+    
+    # Small shapes
+    for _ in range(shapes_per_category + (1 if remaining > 0 else 0)):
+        sizes.append(np.random.randint(small_min, small_max + 1))
+    if remaining > 0:
+        remaining -= 1
+    
+    # Medium shapes  
+    for _ in range(shapes_per_category + (1 if remaining > 0 else 0)):
+        sizes.append(np.random.randint(medium_min, medium_max + 1))
+    if remaining > 0:
+        remaining -= 1
+        
+    # Large shapes
+    for _ in range(shapes_per_category):
+        sizes.append(np.random.randint(large_min, large_max + 1))
+    
+    # Shuffle and return
+    sizes = np.array(sizes)
+    np.random.shuffle(sizes)
+    return sizes
+
+
 def generate_color(
     n_samples: int, min_lightness: int = 0, max_lightness: int = 256
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -303,17 +350,9 @@ def generate_dataset(
     max_lightness: int,
     imsize: int,
     classes: np.ndarray | None = None,
-    scale_canvas_shape_ratio: float = 0.0,
 ) -> Dataset:
     if classes is None:
         classes = generate_class(n_samples)
-        
-    if scale_canvas_shape_ratio > 0:
-        # Scale the shape sizes proportionally to image size
-        # Default 32x32 image has scales 7-14, so we scale proportionally
-        scale_ratio = (imsize / 32.0) * scale_canvas_shape_ratio
-        min_scale = int(min_scale * scale_ratio)
-        max_scale = int(max_scale * scale_ratio)
 
     sizes = generate_scale(n_samples, min_scale, max_scale)
     locations = generate_location(n_samples, max_scale, imsize)
