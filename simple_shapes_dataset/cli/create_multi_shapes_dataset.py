@@ -10,6 +10,7 @@ from tqdm import tqdm
 from simple_shapes_dataset.cli.alignments import create_domain_split
 from simple_shapes_dataset.text import composer
 from simple_shapes_dataset.text.composer_multi import create_multi_shape_composer
+from simple_shapes_dataset.text.composer_qa import create_qa_composer
 from simple_shapes_dataset.version import __version__
 
 from .utils import save_bert_latents
@@ -129,10 +130,10 @@ def create_unpaired_attributes_multi(
     help="Maximum lightness for the shapes' HSL color. Higher values are lighter.",
 )
 @click.option(
-    "--scale_canvas_shape_ratio",
-    default=0.0,
-    type=float,
-    help="Ratio to scale shape sizes with image size. 1.0 = proportional scaling, 0.0 = no scaling.",
+    "--even_sizes",
+    is_flag=True,
+    default=False,
+    help="Use evenly distributed sizes across small/medium/large categories (simple approach).",
 )
 @click.option(
     "--background_color",
@@ -155,6 +156,20 @@ def create_unpaired_attributes_multi(
     default=False,
     help="Generate text captions and BERT embeddings (experimental for multi-shapes)",
 )
+@click.option(
+    "--generate_qa",
+    "--qa",
+    is_flag=True,
+    default=False,
+    help="Generate question-answer pairs along with captions (requires --generate_captions)",
+)
+@click.option(
+    "--num_qa_pairs",
+    "--nqa",
+    default=3,
+    type=int,
+    help="Number of QA pairs to generate per image (when --generate_qa is enabled)",
+)
 def create_multi_shapes_dataset(
     seed: int,
     img_size: int,
@@ -169,22 +184,21 @@ def create_multi_shapes_dataset(
     max_scale: int,
     min_lightness: int,
     max_lightness: int,
-    scale_canvas_shape_ratio: float,
+    even_sizes: bool,
     background_color: str,
     bert_path: str,
     generate_captions: bool,
+    generate_qa: bool,
+    num_qa_pairs: int,
 ) -> None:
     """Generate a multi-shapes dataset with multiple shapes per image."""
     dataset_location = Path(output_path)
     dataset_location.mkdir(exist_ok=True)
 
-    # Apply canvas shape ratio scaling if specified
+    # Calculate size ranges
     actual_min_scale = min_scale
     actual_max_scale = max_scale
-    if scale_canvas_shape_ratio > 0:
-        scale_ratio = (img_size / 32.0) * scale_canvas_shape_ratio
-        actual_min_scale = int(min_scale * scale_ratio)
-        actual_max_scale = int(max_scale * scale_ratio)
+    print(f"Manual scaling: {min_scale}-{max_scale} pixels (no scaling)")
 
     # Validate canvas capacity before generation
     max_shapes_for_validation = shapes_per_canvas
@@ -217,10 +231,10 @@ def create_multi_shapes_dataset(
         max_lightness,
         img_size,
         shapes_per_canvas,
-        scale_canvas_shape_ratio,
         variable_shapes,
         min_shapes_per_canvas,
         shapes_per_canvas,  # max_shapes_per_canvas
+        even_sizes,
     )
     
     print("Generating validation data...")
@@ -232,10 +246,10 @@ def create_multi_shapes_dataset(
         max_lightness,
         img_size,
         shapes_per_canvas,
-        scale_canvas_shape_ratio,
         variable_shapes,
         min_shapes_per_canvas,
         shapes_per_canvas,  # max_shapes_per_canvas
+        even_sizes,
     )
     
     print("Generating test data...")
@@ -247,10 +261,10 @@ def create_multi_shapes_dataset(
         max_lightness,
         img_size,
         shapes_per_canvas,
-        scale_canvas_shape_ratio,
         variable_shapes,
         min_shapes_per_canvas,
         shapes_per_canvas,  # max_shapes_per_canvas
+        even_sizes,
     )
 
     print("Saving labels...")
@@ -274,15 +288,25 @@ def create_multi_shapes_dataset(
         print("Generating FOL-structured captions for predicate-argument structure study...")
         print("Note: Captions encode First-Order Logic relationships for semantic analysis")
         
-        # Create the multi-shape composer
+        if generate_qa:
+            print(f"Also generating {num_qa_pairs} balanced binding QA pairs per image...")
+        
+        # Create the multi-shape composer for captions
         multi_composer = create_multi_shape_composer(img_size)
+        
+        # Create the QA composer for balanced binding questions (if needed)
+        qa_composer = None
+        if generate_qa:
+            qa_composer = create_qa_composer(img_size)
         
         for split, dataset in [("train", train_dataset), ("val", val_dataset), ("test", test_dataset)]:
             captions = []
             choices = []
+            qa_pairs_list = []  # Store QA pairs if requested
             n_canvases = dataset.classes.shape[0]
             
-            for canvas_idx in tqdm(range(n_canvases), desc=f"Generating {split} FOL captions"):
+            desc_suffix = " and binding QA pairs" if generate_qa else ""
+            for canvas_idx in tqdm(range(n_canvases), desc=f"Generating {split} FOL captions{desc_suffix}"):
                 # Get the actual number of shapes in this canvas
                 num_shapes = int(dataset.num_shapes[canvas_idx])
                 
@@ -300,9 +324,27 @@ def create_multi_shapes_dataset(
                 caption, choice = multi_composer.generate_caption(canvas_data)
                 captions.append(caption)
                 choices.append(choice)
+                
+                if generate_qa and qa_composer is not None:
+                    # Generate balanced binding QA pairs using separate QA composer
+                    qa_pairs = qa_composer.generate_comprehensive_binding_qa(canvas_data, num_qa_pairs)
+                    qa_pairs_list.append(qa_pairs)
             
+            # Save captions and choices
             np.save(str(dataset_location / f"{split}_captions.npy"), captions)
             np.save(str(dataset_location / f"{split}_caption_choices.npy"), choices)
+            
+            # Save QA pairs if generated
+            if generate_qa and qa_pairs_list:
+                np.save(str(dataset_location / f"{split}_qa_pairs.npy"), qa_pairs_list)
+                print(f"Saved {len(qa_pairs_list)} balanced binding QA pair sets for {split} split")
+                
+                # Analyze and report QA balance for the first few examples
+                if qa_composer and qa_pairs_list:
+                    sample_qa = qa_pairs_list[0] if qa_pairs_list else []
+                    if sample_qa:
+                        balance = qa_composer.analyze_qa_balance(sample_qa)
+                        print(f"  {split} QA balance: {balance['yes_count']} yes, {balance['no_count']} no (ratio: {balance['balance_ratio']:.2f})")
 
             save_bert_latents(
                 captions,
@@ -328,6 +370,9 @@ def create_multi_shapes_dataset(
         "actual_max_scale": actual_max_scale,
         "background_color": background_color,
         "version": __version__,
+        "generate_captions": generate_captions,
+        "generate_qa": generate_qa,
+        "num_qa_pairs": num_qa_pairs if generate_qa else 0,
     }
     
     with open(dataset_location / "metadata.txt", "w") as f:
@@ -342,3 +387,8 @@ def create_multi_shapes_dataset(
         print(f"Dataset contains {min_shapes_per_canvas}-{shapes_per_canvas} shapes per canvas (variable)")
     else:
         print(f"Dataset contains {shapes_per_canvas} shapes per canvas (fixed)")
+    
+    if generate_captions:
+        print("✅ FOL-structured captions generated for predicate-argument structure analysis")
+        if generate_qa:
+            print("✅ Balanced binding QA pairs generated for compositional understanding evaluation")
