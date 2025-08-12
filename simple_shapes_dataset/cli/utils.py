@@ -272,9 +272,9 @@ def generate_even_scale(n_samples: int, img_size: int) -> np.ndarray:
     # Simple 3 size ranges based on canvas size
     small_min = max(3, int(img_size * 0.05))   # 5% minimum  
     small_max = int(img_size * 0.10)           # 10%
-    medium_min = int(img_size * 0.15)          # 15%
-    medium_max = int(img_size * 0.20)          # 20%
-    large_min = int(img_size * 0.20)           # 20%
+    medium_min = int(img_size * 0.18)          # 18%
+    medium_max = int(img_size * 0.22)          # 22%
+    large_min = int(img_size * 0.30)           # 30%
     large_max = int(img_size * 0.35)           # 35%
     
     # Divide shapes evenly across 3 categories

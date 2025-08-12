@@ -163,7 +163,6 @@ def validate_canvas_capacity(
             f"Suggestions: "
             f"reduce --spc to {max_capacity}, "
             f"increase --img_size (current: {imsize}), "
-            f"or reduce shape sizes (current: {min_scale}-{max_scale}) "
-            f"or adjust --scale_canvas_shape_ratio which affects shape sizes"
+            f"or reduce shape sizes (current: {min_scale}-{max_scale})"
         )
         return False, max_capacity, message

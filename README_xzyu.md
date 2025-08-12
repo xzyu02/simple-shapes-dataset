@@ -8,19 +8,19 @@ pip install -e .
 ## Usage Examples
 ```bash
 # Single shape per image
-shapesd create --output_path /users/xyu110/scratch --ntrain 100 --nval 20 --ntest 20 --img_size 64 --scale_canvas_shape_ratio 1.0 --bg black
+shapesd create --output_path /users/xyu110/scratch/single --ntrain 100 --nval 20 --ntest 20 --img_size 64 --bg black
 
 # Multiple shapes per image (fixed number)
-shapesd create-multi --output_path /users/xyu110/scratch/multi --ntrain 10 --nval 5 --ntest 5 --spc 10 --img_size 224 --scale_canvas_shape_ratio 0.2
+shapesd create-multi --output_path /users/xyu110/scratch/multi --ntrain 10 --nval 5 --ntest 5 --spc 10 --img_size 224
 
 # Variable number of shapes per image (5-10 shapes randomly)
-shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 1000 --nval 50 --ntest 50 --spc 5 --var --min_spc 3 --img_size 224 --auto_size_range --size_distribution balanced
+shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 1000 --nval 50 --ntest 50 --spc 5 --var --min_spc 3 --img_size 224
 
 # Caption Generation for Multi Shapes with optimal sizing
 shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 5 --var --min_spc 3 --img_size 224 --even_sizes --captions
 
 # Generate QA with evenly distributed sizes for multi-shape scenes
-shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 7 --var --min_spc 5 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8
+shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 3 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8
 ```
 
 Results running `test_dataset_loader.py`:
@@ -402,10 +402,10 @@ Multi-shapes specific options:
 ## Usage Examples
 ```bash
 # Single shape per image
-shapesd create --output_path /users/xyu110/scratch --ntrain 100 --nval 20 --ntest 20 --img_size 64 --scale_canvas_shape_ratio 1.0 --bg black
+shapesd create --output_path /users/xyu110/scratch --ntrain 100 --nval 20 --ntest 20 --img_size 64 --bg black
 
 # Multiple shapes per image
-shapesd create-multi --output_path /users/xyu110/scratch/multi --ntrain 10 --nval 5 --ntest 5 --spc 10 --img_size 224 --scale_canvas_shape_ratio 0.3
+shapesd create-multi --output_path /users/xyu110/scratch/multi --ntrain 10 --nval 5 --ntest 5 --spc 10 --img_size 224
 ```
 
 ## Create dataset
@@ -416,7 +416,6 @@ Configuration values:
 - `--output_path, -o OUTPUT_PATH` where to save the dataset
 - `--seed, -s SEED` random seed (defaults to 0)
 - `--img_size` size of the images (defaults to 32)
-- `--scale_canvas_shape_ratio` shape ratio to canvas (defaults to 0.0), suggesting 0.0 to 1.0, 1.0 keeps original shape size and smaller number downscale it
 - `--bg` background color (defaults to black), supports "black", "blue", "gray", "noise".
 - `--ntrain` number of train examples (defaults to 500,000)
 - `--nval` number of validation examples (defaults to 1000)

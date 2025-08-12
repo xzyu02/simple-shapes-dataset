@@ -9,6 +9,7 @@ from .collision import (
 )
 from .dataset import MultiShapesDataset, generate_multi_shapes_dataset
 from .io import load_multi_shapes_labels, save_multi_shapes_labels
+from .multishape_loader import MultiShapeLoader, create_train_val_test_loaders
 from .rendering import save_multi_shapes_dataset
 
 __all__ = [
@@ -24,6 +25,9 @@ __all__ = [
     # I/O
     "load_multi_shapes_labels",
     "save_multi_shapes_labels",
+    # Loader
+    "MultiShapeLoader",
+    "create_train_val_test_loaders",
     # Rendering
     "save_multi_shapes_dataset",
 ]
