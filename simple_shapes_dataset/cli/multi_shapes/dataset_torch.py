@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Clean MultiShape Dataset Loader.
+Clean MultiShape Dataset.
 
-A minimal, focused dataset loader for multi-shape datasets that provides
+A minimal, focused dataset for multi-shape data that provides
 clean data loading functionality without analysis or visualization features.
 Compatible with PyTorch DataLoader for ML training.
 """
@@ -16,12 +16,12 @@ from PIL import Image
 import torchvision.transforms as transforms
 
 
-class MultiShapeLoader(Dataset):
+class MultiShapeDataset(Dataset):
     """
-    Clean dataset loader for multi-shape datasets.
+    Clean dataset for multi-shape data.
     
     Compatible with PyTorch DataLoader for ML training. Can be used as:
-    1. Standalone data loader (original functionality)
+    1. Standalone dataset (original functionality)
     2. PyTorch Dataset for DataLoader integration
     
     Args:
@@ -35,7 +35,7 @@ class MultiShapeLoader(Dataset):
         
     Example:
         # Load only images and QA pairs with transforms
-        loader = MultiShapeLoader(
+        dataset = MultiShapeDataset(
             dataset_path="/path/to/dataset",
             split="train",
             domains=['images', 'qa_pairs', 'shapes'],
@@ -61,7 +61,7 @@ class MultiShapeLoader(Dataset):
         text_transform: Optional[Callable] = None,
     ):
         """
-        Initialize the dataset loader.
+        Initialize the dataset.
         
         Args:
             dataset_path (str): Path to the dataset directory
@@ -502,8 +502,8 @@ class MultiShapeLoader(Dataset):
     def get_sample(self, split: str, canvas_idx: int) -> Dict[str, Any]:
         """Get all data for a specific sample (legacy method)."""
         if split != self.split:
-            # Create temporary loader for different split
-            temp_loader = MultiShapeLoader(
+            # Create temporary dataset for different split
+            temp_dataset = MultiShapeDataset(
                 str(self.dataset_path), 
                 split=split, 
                 load_images=self.load_images,
@@ -511,7 +511,7 @@ class MultiShapeLoader(Dataset):
                 text_transform=self.text_transform,
                 qa_format=self.qa_format
             )
-            return temp_loader[canvas_idx]
+            return temp_dataset[canvas_idx]
         return self[canvas_idx]
     
     def get_split_size(self, split: str) -> int:
@@ -519,9 +519,9 @@ class MultiShapeLoader(Dataset):
         if split == self.split:
             return len(self)
         
-        # For other splits, create temporary loader
-        temp_loader = MultiShapeLoader(str(self.dataset_path), split=split, load_images=False)
-        return len(temp_loader)
+        # For other splits, create temporary dataset
+        temp_dataset = MultiShapeDataset(str(self.dataset_path), split=split, load_images=False)
+        return len(temp_dataset)
     
     def get_dataset_info(self) -> Dict[str, Any]:
         """Get basic information about the dataset."""
@@ -542,8 +542,8 @@ class MultiShapeLoader(Dataset):
                 if split == self.split:
                     available_data = list(self.data.keys())
                 else:
-                    temp_loader = MultiShapeLoader(str(self.dataset_path), split=split, load_images=False)
-                    available_data = list(temp_loader.data.keys())
+                    temp_dataset = MultiShapeDataset(str(self.dataset_path), split=split, load_images=False)
+                    available_data = list(temp_dataset.data.keys())
                 
                 info["splits"][split] = {
                     "size": split_size,
@@ -570,8 +570,8 @@ class MultiShapeLoader(Dataset):
             split = self.split
         
         if split != self.split:
-            temp_loader = MultiShapeLoader(str(self.dataset_path), split=split, load_images=False)
-            return temp_loader.get_qa_data()
+            temp_dataset = MultiShapeDataset(str(self.dataset_path), split=split, load_images=False)
+            return temp_dataset.get_qa_data()
         
         if "qa_pairs" not in self.data:
             return [], [], []
@@ -761,8 +761,8 @@ class MultiShapeLoader(Dataset):
                 if split == self.split:
                     available_data = list(self.data.keys())
                 else:
-                    temp_loader = MultiShapeLoader(str(self.dataset_path), split=split, load_images=False)
-                    available_data = list(temp_loader.data.keys())
+                    temp_dataset = MultiShapeDataset(str(self.dataset_path), split=split, load_images=False)
+                    available_data = list(temp_dataset.data.keys())
                 
                 info["splits"][split] = {
                     "size": split_size,
@@ -789,8 +789,8 @@ class MultiShapeLoader(Dataset):
             split = self.split
         
         if split != self.split:
-            temp_loader = MultiShapeLoader(str(self.dataset_path), split=split, load_images=False)
-            return temp_loader.get_qa_data()
+            temp_dataset = MultiShapeDataset(str(self.dataset_path), split=split, load_images=False)
+            return temp_dataset.get_qa_data()
         
         if "qa_pairs" not in self.data:
             return [], [], []
@@ -831,21 +831,21 @@ def create_train_val_test_loaders(
         Tuple of (train_loader, val_loader, test_loader)
     """
     # Create datasets
-    train_dataset = MultiShapeLoader(
+    train_dataset = MultiShapeDataset(
         dataset_path, 
         split="train", 
         domains=domains,
         transforms=transforms
     )
     
-    val_dataset = MultiShapeLoader(
+    val_dataset = MultiShapeDataset(
         dataset_path, 
         split="val", 
         domains=domains,
         transforms=transforms
     )
     
-    test_dataset = MultiShapeLoader(
+    test_dataset = MultiShapeDataset(
         dataset_path, 
         split="test", 
         domains=domains,
@@ -875,28 +875,28 @@ def create_train_val_test_loaders(
 
 
 if __name__ == "__main__":
-    """Example usage of the MultiShapeLoader with domain selection."""
+    """Example usage of the MultiShapeDataset with domain selection."""
     dataset_path = "/users/xyu110/scratch/variable"  # Update this path as needed
     
     if not Path(dataset_path).exists():
         print(f"Dataset path {dataset_path} does not exist!")
         exit(0)
     
-    print("=== MultiShapeLoader Domain Selection Examples ===\n")
+    print("=== MultiShapeDataset Domain Selection Examples ===\n")
     
     # Example 1: Load only QA pairs and shapes (no images, no captions)
     print("1. Loading only QA pairs and shapes:")
-    qa_shapes_loader = MultiShapeLoader(
+    qa_shapes_dataset = MultiShapeDataset(
         dataset_path,
         split="train",
         domains=['qa_pairs', 'shapes']
     )
     
-    print(f"Loaded domains: {qa_shapes_loader.domains}")
-    print(f"Dataset size: {len(qa_shapes_loader)} QA pairs")
+    print(f"Loaded domains: {qa_shapes_dataset.domains}")
+    print(f"Dataset size: {len(qa_shapes_dataset)} QA pairs")
     
-    if len(qa_shapes_loader) > 0:
-        sample = qa_shapes_loader[0]
+    if len(qa_shapes_dataset) > 0:
+        sample = qa_shapes_dataset[0]
         print(f"Sample keys: {list(sample.keys())}")
         print(f"Has shapes: {'shapes' in sample}")
         print(f"Has question: {'question' in sample}")
@@ -913,16 +913,16 @@ if __name__ == "__main__":
         ])
     }
     
-    image_qa_loader = MultiShapeLoader(
+    image_qa_dataset = MultiShapeDataset(
         dataset_path,
         split="train", 
         domains=['images', 'qa_pairs'],
         transforms=image_transforms
     )
     
-    print(f"Loaded domains: {image_qa_loader.domains}")
-    if len(image_qa_loader) > 0:
-        sample = image_qa_loader[0]
+    print(f"Loaded domains: {image_qa_dataset.domains}")
+    if len(image_qa_dataset) > 0:
+        sample = image_qa_dataset[0]
         print(f"Sample keys: {list(sample.keys())}")
         if 'image' in sample:
             print(f"Image shape: {sample['image'].shape}")
@@ -939,14 +939,14 @@ def main():
         print(f"Dataset path {dataset_path} does not exist!")
         return
     
-    print("=== MultiShapeLoader Legacy Examples ===\n")
+    print("=== MultiShapeDataset Legacy Examples ===\n")
     
     # Example 1: Basic usage with domain selection
     print("1. Basic Data Loading:")
-    loader = MultiShapeLoader(dataset_path, split="train", domains=['shapes', 'captions', 'qa_pairs'])
+    dataset = MultiShapeDataset(dataset_path, split="train", domains=['shapes', 'captions', 'qa_pairs'])
     
-    if len(loader) > 0:
-        sample = loader[0]
+    if len(dataset) > 0:
+        sample = dataset[0]
         print(f"Sample 0: {sample.get('num_shapes', 0)} shapes, {sample.get('num_qa_pairs', 0)} QA pairs")
         if 'caption' in sample:
             print(f"Caption: {sample['caption'][:100]}...")

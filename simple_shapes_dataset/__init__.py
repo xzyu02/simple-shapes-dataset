@@ -4,7 +4,7 @@ import simple_shapes_dataset.cli as cli
 import simple_shapes_dataset.downstream as downstream
 import simple_shapes_dataset.text as text
 
-from .cli.multi_shapes import MultiShapeLoader, create_train_val_test_loaders
+from .cli.multi_shapes import MultiShapeDataset, create_train_val_test_loaders
 from .data_module import SimpleShapesDataModule
 from .dataset import RepeatedDataset, SimpleShapesDataset, SizedDataset
 from .domain import (
@@ -46,7 +46,7 @@ __all__ = [
     "cli",
     "downstream",
     "text",
-    "MultiShapeLoader",
+    "MultiShapeDataset",
     "create_train_val_test_loaders",
     "SimpleShapesDataModule",
     "RepeatedDataset",
