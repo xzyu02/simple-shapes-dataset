@@ -46,6 +46,7 @@ def generate_multi_shapes_dataset(
     min_shapes_per_canvas: int = 1,
     max_shapes_per_canvas: int | None = None,
     even_sizes: bool = False,
+    allowed_classes: list[int] | None = None,
 ) -> MultiShapesDataset:
     """
     Generate a dataset with multiple shapes per image.
@@ -62,6 +63,7 @@ def generate_multi_shapes_dataset(
         min_shapes_per_canvas: Minimum shapes when variable_shapes=True
         max_shapes_per_canvas: Maximum shapes when variable_shapes=True (defaults to shapes_per_canvas)
         even_sizes: If True, use evenly distributed sizes across small/medium/large categories
+        allowed_classes: List of allowed shape class indices (0-6). If None, uses all 7 shapes.
     
     Returns:
         MultiShapesDataset with generated data
@@ -117,7 +119,7 @@ def generate_multi_shapes_dataset(
         all_num_shapes[canvas_idx] = current_num_shapes
         
         # Generate all attributes for shapes in this canvas
-        canvas_classes = generate_class(current_num_shapes)
+        canvas_classes = generate_class(current_num_shapes, allowed_classes)
         
         if even_sizes:
             from simple_shapes_dataset.cli.utils import generate_even_scale

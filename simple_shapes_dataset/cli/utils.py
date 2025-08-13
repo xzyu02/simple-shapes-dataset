@@ -269,40 +269,10 @@ def generate_even_scale(n_samples: int, img_size: int) -> np.ndarray:
     Returns:
         Array of shape sizes evenly distributed across small/medium/large
     """
-    # Simple 3 size ranges based on canvas size
-    small_min = max(3, int(img_size * 0.05))   # 5% minimum  
-    small_max = int(img_size * 0.10)           # 10%
-    medium_min = int(img_size * 0.18)          # 18%
-    medium_max = int(img_size * 0.22)          # 22%
-    large_min = int(img_size * 0.30)           # 30%
-    large_max = int(img_size * 0.35)           # 35%
-    
-    # Divide shapes evenly across 3 categories
-    shapes_per_category = n_samples // 3
-    remaining = n_samples % 3
-    
-    sizes = []
-    
-    # Small shapes
-    for _ in range(shapes_per_category + (1 if remaining > 0 else 0)):
-        sizes.append(np.random.randint(small_min, small_max + 1))
-    if remaining > 0:
-        remaining -= 1
-    
-    # Medium shapes  
-    for _ in range(shapes_per_category + (1 if remaining > 0 else 0)):
-        sizes.append(np.random.randint(medium_min, medium_max + 1))
-    if remaining > 0:
-        remaining -= 1
-        
-    # Large shapes
-    for _ in range(shapes_per_category):
-        sizes.append(np.random.randint(large_min, large_max + 1))
-    
-    # Shuffle and return
-    sizes = np.array(sizes)
-    np.random.shuffle(sizes)
-    return sizes
+    # Use shared size configuration for consistency with caption generation
+    from simple_shapes_dataset.text.size_config import SizeConfig
+    size_config = SizeConfig(img_size)
+    return size_config.generate_even_sizes(n_samples)
 
 
 def generate_color(
@@ -333,9 +303,25 @@ def generate_location(n_samples: int, max_scale: int, imsize: int) -> np.ndarray
     return locations
 
 
-def generate_class(n_samples: int) -> np.ndarray:
-    # return np.full(n_samples, 6)  # Always generate hearts (class 6)
-    return np.random.randint(7, size=n_samples)
+def generate_class(n_samples: int, allowed_classes: list[int] | None = None) -> np.ndarray:
+    """
+    Generate shape classes for n_samples.
+    
+    Args:
+        n_samples: Number of samples to generate
+        allowed_classes: List of allowed shape class indices. If None, uses all 7 shapes.
+                        Available shapes: 0=Triangle, 1=Square, 2=Pentagon, 3=Circle, 
+                        4=Star, 5=Heart, 6=Diamond, 7=Cross
+    
+    Returns:
+        Array of shape class indices
+    """
+    if allowed_classes is None:
+        # Default: use all 7 shapes
+        allowed_classes = list(range(7))  # [0, 1, 2, 3, 4, 5, 6]
+    
+    # Generate random classes from the allowed set
+    return np.random.choice(allowed_classes, size=n_samples)
 
 
 def generate_unpaired_attr(n_samples: int) -> np.ndarray:
@@ -350,9 +336,28 @@ def generate_dataset(
     max_lightness: int,
     imsize: int,
     classes: np.ndarray | None = None,
+    allowed_classes: list[int] | None = None,
 ) -> Dataset:
+    """
+    Generate a dataset with specified parameters.
+    
+    Args:
+        n_samples: Number of samples to generate
+        min_scale: Minimum shape size
+        max_scale: Maximum shape size
+        min_lightness: Minimum color lightness
+        max_lightness: Maximum color lightness
+        imsize: Image size
+        classes: Pre-defined classes array. If None, generates random classes.
+        allowed_classes: List of allowed shape classes. Only used if classes is None.
+                        Available: 0=Triangle, 1=Square, 2=Pentagon, 3=Circle, 
+                                  4=Star, 5=Heart, 6=Diamond, 7=Cross
+    
+    Returns:
+        Dataset object
+    """
     if classes is None:
-        classes = generate_class(n_samples)
+        classes = generate_class(n_samples, allowed_classes)
 
     sizes = generate_scale(n_samples, min_scale, max_scale)
     locations = generate_location(n_samples, max_scale, imsize)

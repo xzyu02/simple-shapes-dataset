@@ -170,6 +170,13 @@ def create_unpaired_attributes_multi(
     type=int,
     help="Number of QA pairs to generate per image (when --generate_qa is enabled)",
 )
+@click.option(
+    "--allowed_shapes",
+    "--shapes",
+    default=None,
+    type=str,
+    help="Comma-separated list of allowed shape indices (0-6). Example: '0,1,3' for triangle,square,circle. If not specified, uses all 7 shapes.",
+)
 def create_multi_shapes_dataset(
     seed: int,
     img_size: int,
@@ -190,10 +197,35 @@ def create_multi_shapes_dataset(
     generate_captions: bool,
     generate_qa: bool,
     num_qa_pairs: int,
+    allowed_shapes: str,
 ) -> None:
     """Generate a multi-shapes dataset with multiple shapes per image."""
     dataset_location = Path(output_path)
     dataset_location.mkdir(exist_ok=True)
+
+    # Process allowed shapes parameter
+    allowed_classes = None
+    if allowed_shapes:
+        try:
+            # Parse comma-separated shape indices
+            allowed_classes = [int(x.strip()) for x in allowed_shapes.split(',')]
+            # Validate indices
+            for idx in allowed_classes:
+                if idx < 0 or idx > 6:
+                    raise ValueError(f"Shape index {idx} is out of range (0-6)")
+            
+            # Get shape names for display
+            shape_names = {
+                0: "Triangle", 1: "Square", 2: "Pentagon", 3: "Circle",
+                4: "Star", 5: "Heart", 6: "Diamond"
+            }
+            selected_shapes = [f"{idx}={shape_names[idx]}" for idx in allowed_classes]
+            print(f"Using selected shapes: {', '.join(selected_shapes)}")
+            
+        except ValueError as e:
+            raise click.ClickException(f"Invalid allowed_shapes format: {e}")
+    else:
+        print("Using all 7 available shapes")
 
     # Calculate size ranges
     actual_min_scale = min_scale
@@ -235,6 +267,7 @@ def create_multi_shapes_dataset(
         min_shapes_per_canvas,
         shapes_per_canvas,  # max_shapes_per_canvas
         even_sizes,
+        allowed_classes,
     )
     
     print("Generating validation data...")
@@ -250,6 +283,7 @@ def create_multi_shapes_dataset(
         min_shapes_per_canvas,
         shapes_per_canvas,  # max_shapes_per_canvas
         even_sizes,
+        allowed_classes,
     )
     
     print("Generating test data...")
@@ -265,6 +299,7 @@ def create_multi_shapes_dataset(
         min_shapes_per_canvas,
         shapes_per_canvas,  # max_shapes_per_canvas
         even_sizes,
+        allowed_classes,
     )
 
     print("Saving labels...")

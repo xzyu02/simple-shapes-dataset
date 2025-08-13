@@ -22,6 +22,22 @@ from simple_shapes_dataset.text.writers import (
     size_writer,
     location_writer_bins
 )
+from simple_shapes_dataset.text.language_templates import (
+    SENTENCE_TEMPLATES,
+    SPATIAL_RELATIONS,
+    SIZE_COMPARISONS,
+    ARRANGEMENTS,
+    SIZE_DESCRIPTIONS,
+    ThresholdConfig,
+    get_closest_color_predicate,
+    get_shape_predicate,
+    get_size_predicate,
+    get_spatial_predicate
+)
+from simple_shapes_dataset.text.size_config import SizeConfig
+
+# Type alias for caption-FOL pairs
+CaptionFOLPair = Tuple[str, str, ChoicesT]  # (natural_language, fol_structure, choices)
 
 
 class MultiShapeComposer:
@@ -39,69 +55,60 @@ class MultiShapeComposer:
     def __init__(self, img_size: int = 32):
         self.img_size = img_size
         
-        # Spatial relationship thresholds (as fractions of image size)
-        self.near_threshold = 0.3  # Within 30% of image size
-        self.very_near_threshold = 0.15  # Within 15% of image size
-        self.far_threshold = 0.6   # Beyond 60% of image size
+        # Initialize size configuration (shared with dataset generation)
+        self.size_config = SizeConfig(img_size)
         
-        # Size classification thresholds (as fractions of canvas dimension)
-        # Conservative thresholds for better multi-shape scenes
-        self.small_threshold = 0.10    # < 10% of canvas
-        self.medium_threshold = 0.20   # < 20% of canvas  
-        self.large_threshold = 0.35    # < 35% of canvas
-        # anything >= 35% would be "very large" but we'll cap at large
+        # Load spatial thresholds from configuration
+        self.near_threshold = ThresholdConfig.NEAR_THRESHOLD
+        self.far_threshold = ThresholdConfig.FAR_THRESHOLD
         
-        # Sentence structure templates
-        self.templates = {
-            "simple_conjunction": [
-                "The image contains {objects}.",
-                "There are {objects}.",
-                "{objects} are visible.",
-                "The canvas shows {objects}.",
-            ],
-            "complex_description": [
-                "The image shows {primary_object} {spatial_relation} {secondary_object}.",
-                "{primary_object} is {spatial_relation} {secondary_object}.",
-                "There is {primary_object} {spatial_relation} {secondary_object}.",
-            ],
-            "comparative": [
-                "The image contains {size_comparison} shapes: {objects}.",
-                "There are {size_comparison} objects: {objects}.",
-            ],
-            "positional": [
-                "{objects} are arranged {arrangement_description}.",
-                "The shapes are positioned {arrangement_description}.",
-            ]
-        }
+        # Load templates and vocabularies from language_templates module
+        self.templates = SENTENCE_TEMPLATES
+        self.spatial_relations = SPATIAL_RELATIONS
+        self.size_comparisons = SIZE_COMPARISONS
+        self.arrangements = ARRANGEMENTS
+        self.size_descriptions = SIZE_DESCRIPTIONS
+
+    def _get_fol_color_predicate(self, color: Tuple[int, int, int]) -> str:
+        """Get FOL color predicate from RGB values."""
+        return get_closest_color_predicate(color)
+
+    def _get_fol_shape_predicate(self, shape_idx: int) -> str:
+        """Get FOL shape predicate from shape index."""
+        return get_shape_predicate(shape_idx)
+
+    def _get_fol_size_predicate(self, size: int) -> str:
+        """Get FOL size predicate from size value."""
+        size_category = self._get_size_category(size)
+        return get_size_predicate(size_category)
+
+    def _generate_fol_for_shape(self, shape_idx: int, canvas_data: Dict, variable: str) -> List[str]:
+        """Generate FOL predicates for a single shape."""
+        predicates = []
         
-        # Spatial relation vocabularies for two-place predicates
-        self.spatial_relations = {
-            "near": ["near", "close to", "beside", "next to"],
-            "far": ["far from", "distant from", "away from"],
-            "above": ["above", "over", "on top of"],
-            "below": ["below", "under", "beneath"],
-            "left_of": ["to the left of", "left of"],
-            "right_of": ["to the right of", "right of"],
-            "diagonal": ["diagonally from", "at an angle to"],
-        }
+        # Shape type predicate
+        shape_type = int(canvas_data["classes"][shape_idx])
+        shape_pred = self._get_fol_shape_predicate(shape_type)
+        predicates.append(f"{shape_pred}({variable})")
         
-        # Size comparison vocabularies
-        self.size_comparisons = {
-            "mixed": ["different sized", "various sized", "mixed-size"],
-            "similar": ["similar sized", "equally sized", "same sized"],
-            "large_small": ["a large and a small", "one large and one small"],
-            "multiple_large": ["multiple large", "several large"],
-            "multiple_small": ["multiple small", "several small"],
-        }
+        # Color predicate
+        color = tuple(canvas_data["colors"][shape_idx])
+        color_pred = self._get_fol_color_predicate(color)
+        predicates.append(f"{color_pred}({variable})")
         
-        # Arrangement descriptions
-        self.arrangements = {
-            "scattered": ["scattered across the canvas", "randomly distributed", "spread out"],
-            "clustered": ["clustered together", "grouped closely", "bunched up"],
-            "linear": ["in a line", "linearly", "in sequence"],
-            "corners": ["in the corners", "at the edges", "around the perimeter"],
-            "center": ["around the center", "centrally", "in the middle area"],
-        }
+        # Size predicate (if significantly different from medium)
+        size = canvas_data["sizes"][shape_idx]
+        size_category = self._get_size_category(size)
+        if size_category != "medium":  # Only include non-medium sizes
+            size_pred = self._get_fol_size_predicate(size)
+            predicates.append(f"{size_pred}({variable})")
+        
+        return predicates
+
+    def _generate_fol_spatial_predicate(self, var1: str, var2: str, spatial_relation: str) -> str:
+        """Generate FOL spatial predicate between two variables."""
+        fol_relation = get_spatial_predicate(spatial_relation)
+        return f"{fol_relation}({var1},{var2})"
 
     def _get_size_description(self, size: int) -> str:
         """
@@ -111,23 +118,18 @@ class MultiShapeComposer:
         - 32x32 canvas: size 14 → "large" (44% of canvas)
         - 224x224 canvas: size 14 → "tiny" (6% of canvas)
         """
-        size_ratio = size / self.img_size
-        
-        if size_ratio < self.small_threshold:
-            return random.choice(["tiny", "very small"])
-        elif size_ratio < self.medium_threshold:
-            return random.choice(["small", "little"])
-        elif size_ratio < self.large_threshold:
-            return random.choice(["medium", "average sized", "medium sized"])
-        else:
-            return random.choice(["large", "big"])
+        size_category = self._get_size_category(size)
+        return random.choice(self.size_descriptions[size_category])
 
-    def _get_shape_description(self, shape_idx: int, canvas_data: Dict, shape_num: int) -> Tuple[str, ChoicesT]:
+    def _get_shape_description(self, shape_idx: int, canvas_data: Dict, shape_num: int) -> Tuple[str, List[str], ChoicesT]:
         """
         Generate description for a single shape with all its properties.
         
         This creates complex noun phrases that "unwind" multiple modifiers:
         Large(x) ∧ Red(x) ∧ Circle(x) → "a large red circle"
+        
+        Returns:
+            Tuple of (natural_description, fol_predicates, choices)
         """
         # Extract shape properties
         shape_type = int(canvas_data["classes"][shape_idx])
@@ -138,6 +140,10 @@ class MultiShapeComposer:
         shape_name, shape_choices = shapes_writer(shape_type)
         size_desc = self._get_size_description(size)  # Use canvas-aware size description
         color_desc, color_choices = color_large_set_writer(*color)
+        
+        # Generate FOL predicates
+        variable = f"x{shape_num}"
+        fol_predicates = self._generate_fol_for_shape(shape_idx, canvas_data, variable)
         
         # Create choices for tracking (size choices are now determined by our canvas-aware method)
         size_category = self._get_size_category(size)
@@ -157,20 +163,11 @@ class MultiShapeComposer:
         else:
             description = f"a {color_desc} {shape_name}"
             
-        return description, combined_choices
+        return description, fol_predicates, combined_choices
 
     def _get_size_category(self, size: int) -> str:
-        """Get the size category for tracking purposes."""
-        size_ratio = size / self.img_size
-        
-        if size_ratio < self.small_threshold:
-            return "tiny"
-        elif size_ratio < self.medium_threshold:
-            return "small"
-        elif size_ratio < self.large_threshold:
-            return "medium"
-        else:
-            return "large"
+        """Get the size category for tracking purposes using shared size config."""
+        return self.size_config.get_size_category(size)
 
     def _calculate_spatial_relationship(self, pos1: Tuple[int, int], pos2: Tuple[int, int]) -> str:
         """
@@ -188,9 +185,7 @@ class MultiShapeComposer:
         distance_ratio = distance / self.img_size
         
         # Determine primary spatial relationship
-        if distance_ratio < self.very_near_threshold:
-            return "very near"
-        elif distance_ratio < self.near_threshold:
+        if distance_ratio < self.near_threshold:
             return "near"
         elif distance_ratio > self.far_threshold:
             return "far"
@@ -218,14 +213,12 @@ class MultiShapeComposer:
         if num_shapes == 2 and len(set(sizes)) == 2:
             size_variety = "large_small"
         else:
-            # Calculate size thresholds relative to canvas size
-            small_threshold_px = self.img_size * self.small_threshold
-            medium_threshold_px = self.img_size * self.medium_threshold
-            large_threshold_px = self.img_size * self.large_threshold
+            # Use size ranges from shared configuration
+            small_range, medium_range, large_range = self.size_config.get_size_ranges()
             
-            small_shapes = sum(1 for s in sizes if s <= small_threshold_px)
-            medium_shapes = sum(1 for s in sizes if small_threshold_px < s <= medium_threshold_px)
-            large_shapes = sum(1 for s in sizes if medium_threshold_px < s <= large_threshold_px)
+            small_shapes = sum(1 for s in sizes if s <= small_range[1])
+            medium_shapes = sum(1 for s in sizes if small_range[1] < s <= medium_range[1])
+            large_shapes = sum(1 for s in sizes if s > medium_range[1])
             
             if small_shapes == num_shapes:
                 size_variety = "multiple_small"
@@ -243,13 +236,13 @@ class MultiShapeComposer:
             y_spread = max(y_coords) - min(y_coords)
             total_spread = (x_spread + y_spread) / (2 * self.img_size)
             
-            if total_spread < 0.3:
+            if total_spread < ThresholdConfig.CLUSTERED_THRESHOLD:
                 arrangement = "clustered"
-            elif total_spread > 0.7:
+            elif total_spread > ThresholdConfig.SCATTERED_THRESHOLD:
                 arrangement = "scattered"
             else:
                 # Check for linear arrangement
-                if abs(x_spread - y_spread) / max(x_spread, y_spread) > 0.7:
+                if abs(x_spread - y_spread) / max(x_spread, y_spread) > ThresholdConfig.LINEAR_THRESHOLD:
                     arrangement = "linear"
                 else:
                     arrangement = "center"
@@ -262,21 +255,26 @@ class MultiShapeComposer:
             "num_shapes": num_shapes,
         }
 
-    def _generate_simple_conjunction(self, canvas_data: Dict, properties: Dict) -> Tuple[str, ChoicesT]:
+    def _generate_simple_conjunction(self, canvas_data: Dict, properties: Dict) -> CaptionFOLPair:
         """
         Generate simple conjunction: ∃x∃y(Shape(x) ∧ Color(x) ∧ Shape(y) ∧ Color(y))
         Example: "The image contains a red circle and a blue square."
+        FOL: ∃x∃y(Circle(x) ∧ Red(x) ∧ Square(y) ∧ Blue(y))
         """
         num_shapes = properties["num_shapes"]
         
         # Generate descriptions for all shapes
         shape_descriptions = []
+        all_fol_predicates = []
         all_choices = {}
+        variables = []
         
         for i in range(num_shapes):
-            desc, choices = self._get_shape_description(i, canvas_data, i)
+            desc, fol_preds, choices = self._get_shape_description(i, canvas_data, i)
             shape_descriptions.append(desc)
+            all_fol_predicates.extend(fol_preds)
             all_choices.update(choices)
+            variables.append(f"x{i}")
         
         # Combine with appropriate conjunctions
         if num_shapes == 2:
@@ -289,13 +287,21 @@ class MultiShapeComposer:
         template = random.choice(self.templates["simple_conjunction"])
         caption = template.format(objects=objects_str)
         
+        # Create FOL structure
+        if num_shapes == 1:
+            fol_structure = f"∃x0({' ∧ '.join(all_fol_predicates)})"
+        else:
+            existential_vars = "".join([f"∃{var}" for var in variables])
+            fol_structure = f"{existential_vars}({' ∧ '.join(all_fol_predicates)})"
+        
         all_choices["template"] = "simple_conjunction"
-        return caption, all_choices
+        return caption, fol_structure, all_choices
 
-    def _generate_spatial_relationship(self, canvas_data: Dict, properties: Dict) -> Tuple[str, ChoicesT]:
+    def _generate_spatial_relationship(self, canvas_data: Dict, properties: Dict) -> CaptionFOLPair:
         """
         Generate spatial relationship: ∃x∃y(Shape(x) ∧ Color(x) ∧ Shape(y) ∧ Color(y) ∧ Relation(x,y))
         Example: "A large diamond is near a small heart."
+        FOL: ∃x∃y(Large(x) ∧ Diamond(x) ∧ Small(y) ∧ Heart(y) ∧ Near(x,y))
         """
         if properties["num_shapes"] < 2:
             return self._generate_simple_conjunction(canvas_data, properties)
@@ -308,8 +314,8 @@ class MultiShapeComposer:
             shape1_idx, shape2_idx = indices
         
         # Generate descriptions for both shapes
-        primary_desc, primary_choices = self._get_shape_description(shape1_idx, canvas_data, 1)
-        secondary_desc, secondary_choices = self._get_shape_description(shape2_idx, canvas_data, 2)
+        primary_desc, primary_fol, primary_choices = self._get_shape_description(shape1_idx, canvas_data, 0)
+        secondary_desc, secondary_fol, secondary_choices = self._get_shape_description(shape2_idx, canvas_data, 1)
         
         # Calculate spatial relationship
         pos1 = tuple(canvas_data["locations"][shape1_idx])
@@ -326,29 +332,39 @@ class MultiShapeComposer:
             secondary_object=secondary_desc
         )
         
+        # Create FOL structure
+        spatial_fol = self._generate_fol_spatial_predicate("x0", "x1", spatial_type)
+        all_fol_predicates = primary_fol + secondary_fol + [spatial_fol]
+        fol_structure = f"∃x0∃x1({' ∧ '.join(all_fol_predicates)})"
+        
         # Combine choices
         all_choices = {**primary_choices, **secondary_choices}
         all_choices["spatial_relation"] = spatial_type
         all_choices["template"] = "spatial_relationship"
         
-        return caption, all_choices
+        return caption, fol_structure, all_choices
 
-    def _generate_comparative_description(self, canvas_data: Dict, properties: Dict) -> Tuple[str, ChoicesT]:
+    def _generate_comparative_description(self, canvas_data: Dict, properties: Dict) -> CaptionFOLPair:
         """
         Generate comparative description focusing on size relationships.
         Example: "The image contains different sized shapes: a large circle and a small square."
+        FOL: ∃x∃x1(Large(x) ∧ Circle(x) ∧ Small(x1) ∧ Square(x1))
         """
         num_shapes = properties["num_shapes"]
         size_variety = properties["size_variety"]
         
         # Generate shape descriptions
         shape_descriptions = []
+        all_fol_predicates = []
         all_choices = {}
+        variables = []
         
         for i in range(num_shapes):
-            desc, choices = self._get_shape_description(i, canvas_data, i)
+            desc, fol_preds, choices = self._get_shape_description(i, canvas_data, i)
             shape_descriptions.append(desc)
+            all_fol_predicates.extend(fol_preds)
             all_choices.update(choices)
+            variables.append(f"x{i}")
         
         # Create objects string
         if num_shapes == 2:
@@ -365,15 +381,23 @@ class MultiShapeComposer:
             objects=objects_str
         )
         
+        # Create FOL structure
+        if num_shapes == 1:
+            fol_structure = f"∃x0({' ∧ '.join(all_fol_predicates)})"
+        else:
+            existential_vars = "".join([f"∃{var}" for var in variables])
+            fol_structure = f"{existential_vars}({' ∧ '.join(all_fol_predicates)})"
+        
         all_choices["size_comparison"] = size_variety
         all_choices["template"] = "comparative"
         
-        return caption, all_choices
+        return caption, fol_structure, all_choices
 
-    def _generate_positional_description(self, canvas_data: Dict, properties: Dict) -> Tuple[str, ChoicesT]:
+    def _generate_positional_description(self, canvas_data: Dict, properties: Dict) -> CaptionFOLPair:
         """
         Generate description focusing on overall spatial arrangement.
         Example: "A red circle and blue square are scattered across the canvas."
+        FOL: ∃x∃x1(Red(x) ∧ Circle(x) ∧ Blue(x1) ∧ Square(x1) ∧ Scattered(x,x1))
         """
         if properties["num_shapes"] < 3:
             return self._generate_spatial_relationship(canvas_data, properties)
@@ -382,12 +406,16 @@ class MultiShapeComposer:
         
         # Generate shape descriptions
         shape_descriptions = []
+        all_fol_predicates = []
         all_choices = {}
+        variables = []
         
         for i in range(properties["num_shapes"]):
-            desc, choices = self._get_shape_description(i, canvas_data, i)
+            desc, fol_preds, choices = self._get_shape_description(i, canvas_data, i)
             shape_descriptions.append(desc)
+            all_fol_predicates.extend(fol_preds)
             all_choices.update(choices)
+            variables.append(f"x{i}")
         
         # Create objects string
         objects_str = ", ".join(shape_descriptions[:-1]) + f", and {shape_descriptions[-1]}"
@@ -401,12 +429,16 @@ class MultiShapeComposer:
             arrangement_description=arrangement_phrase
         )
         
+        # Create FOL structure (simplified - just conjunction of individual predicates)
+        existential_vars = "".join([f"∃{var}" for var in variables])
+        fol_structure = f"{existential_vars}({' ∧ '.join(all_fol_predicates)})"
+        
         all_choices["arrangement"] = arrangement
         all_choices["template"] = "positional"
         
-        return caption, all_choices
+        return caption, fol_structure, all_choices
 
-    def generate_caption(self, canvas_data: Dict) -> Tuple[str, ChoicesT]:
+    def generate_caption(self, canvas_data: Dict) -> CaptionFOLPair:
         """
         Generate a FOL-structured caption for a multi-shape canvas.
         
@@ -419,7 +451,7 @@ class MultiShapeComposer:
                 - num_shapes: number of actual shapes in canvas
         
         Returns:
-            Tuple of (caption_string, choices_dict)
+            Tuple of (caption_string, fol_structure, choices_dict)
         """
         # Analyze canvas properties
         properties = self._analyze_canvas_properties(canvas_data)
@@ -429,7 +461,9 @@ class MultiShapeComposer:
         
         if num_shapes == 1:
             # Single shape: just describe it
-            return self._get_shape_description(0, canvas_data, 0)
+            desc, fol_preds, choices = self._get_shape_description(0, canvas_data, 0)
+            fol_structure = f"∃x0({' ∧ '.join(fol_preds)})"
+            return desc, fol_structure, choices
         
         # Multi-shape strategies with different probabilities
         strategies = []
@@ -475,6 +509,26 @@ class MultiShapeComposer:
         else:
             return self._generate_simple_conjunction(canvas_data, properties)
 
+    def generate_caption_only(self, canvas_data: Dict) -> Tuple[str, ChoicesT]:
+        """
+        Generate only the natural language caption (for backward compatibility).
+        
+        Returns:
+            Tuple of (caption_string, choices_dict)
+        """
+        caption, fol_structure, choices = self.generate_caption(canvas_data)
+        return caption, choices
+
+    def generate_fol_only(self, canvas_data: Dict) -> str:
+        """
+        Generate only the FOL structure.
+        
+        Returns:
+            FOL structure string
+        """
+        caption, fol_structure, choices = self.generate_caption(canvas_data)
+        return fol_structure
+
 
 def create_multi_shape_composer(img_size: int = 32) -> MultiShapeComposer:
     """Factory function to create a multi-shape composer."""
@@ -486,36 +540,160 @@ if __name__ == "__main__":
     # Test the composer with example data
     composer = create_multi_shape_composer(32)
     
-    # Example canvas data
-    test_canvas = {
-        "classes": np.array([3, 4]),  # circle, square
-        "sizes": np.array([12, 8]),   # large, small
-        "colors": np.array([[255, 0, 0], [0, 0, 255]]),  # red, blue
-        "locations": np.array([[10, 15], [20, 15]]),  # side by side
-        "num_shapes": 2,
-    }
+    # Test cases with different numbers of shapes
+    test_cases = [
+        {
+            "name": "Two Shapes",
+            "canvas": {
+                "classes": np.array([3, 1]),  # circle, square
+                "sizes": np.array([12, 8]),   # large, small
+                "colors": np.array([[255, 0, 0], [0, 0, 255]]),  # red, blue
+                "locations": np.array([[10, 15], [20, 15]]),  # side by side
+                "num_shapes": 2,
+            }
+        },
+        {
+            "name": "Three Shapes",
+            "canvas": {
+                "classes": np.array([3, 1, 6]),  # circle, square, diamond
+                "sizes": np.array([14, 8, 10]),   # large, small, medium
+                "colors": np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]]),  # red, green, blue
+                "locations": np.array([[8, 8], [24, 8], [16, 24]]),  # triangle formation
+                "num_shapes": 3,
+            }
+        },
+        {
+            "name": "Four Shapes",
+            "canvas": {
+                "classes": np.array([3, 1, 6, 4]),  # circle, square, diamond, star
+                "sizes": np.array([12, 6, 10, 14]),   # medium, small, medium, large
+                "colors": np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0]]),  # red, green, blue, yellow
+                "locations": np.array([[8, 8], [24, 8], [8, 24], [24, 24]]),  # corners
+                "num_shapes": 4,
+            }
+        },
+        {
+            "name": "Five Shapes (Scattered)",
+            "canvas": {
+                "classes": np.array([3, 1, 6, 4, 0]),  # circle, square, diamond, star, triangle
+                "sizes": np.array([8, 6, 12, 10, 7]),   # mixed sizes
+                "colors": np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [255, 0, 255]]),  # various colors
+                "locations": np.array([[5, 5], [27, 5], [16, 16], [5, 27], [27, 27]]),  # scattered
+                "num_shapes": 5,
+            }
+        }
+    ]
     
     print("=== CAPTION GENERATION EXAMPLES ===")
-    print("Example captions:")
-    for i in range(3):
-        caption, choices = composer.generate_caption(test_canvas)
-        print(f"{i+1}. {caption}")
-        print(f"   Strategy: {choices.get('template', 'unknown')}")
-        print(f"   Choices: {choices}")
+    
+    for test_case in test_cases:
+        print(f"\n--- {test_case['name']} ---")
+        print("Example captions with FOL structures:")
+        
+        for i in range(2):  # Generate 2 examples for each test case
+            caption, fol_structure, choices = composer.generate_caption(test_case['canvas'])
+            print(f"{i+1}. Natural Language: {caption}")
+            print(f"   FOL Structure: {fol_structure}")
+            print(f"   Strategy: {choices.get('template', 'unknown')}")
+            
+            # Show some key choices for understanding
+            key_choices = {k: v for k, v in choices.items() if not k.startswith('shape_') and not k.startswith('size_') and not k.startswith('color_')}
+            if key_choices:
+                print(f"   Key Choices: {key_choices}")
+            print()
+    
+    print("\n=== STRATEGY-SPECIFIC EXAMPLES ===")
+    # Test specific strategies with a 3-shape canvas
+    three_shape_canvas = test_cases[1]['canvas']  # Use the three shapes test case
+    
+    print("Forcing different generation strategies:")
+    
+    # Test simple conjunction
+    caption, fol_structure, choices = composer._generate_simple_conjunction(three_shape_canvas, {"num_shapes": 3})
+    print(f"1. Simple Conjunction:")
+    print(f"   Caption: {caption}")
+    print(f"   FOL: {fol_structure}")
+    
+    # Test spatial relationship
+    caption, fol_structure, choices = composer._generate_spatial_relationship(three_shape_canvas, {"num_shapes": 3})
+    print(f"\n2. Spatial Relationship:")
+    print(f"   Caption: {caption}")
+    print(f"   FOL: {fol_structure}")
+    
+    # Test comparative description
+    properties = composer._analyze_canvas_properties(three_shape_canvas)
+    caption, fol_structure, choices = composer._generate_comparative_description(three_shape_canvas, properties)
+    print(f"\n3. Comparative Description:")
+    print(f"   Caption: {caption}")
+    print(f"   FOL: {fol_structure}")
+    
+    # Test positional description
+    caption, fol_structure, choices = composer._generate_positional_description(three_shape_canvas, properties)
+    print(f"\n4. Positional Description:")
+    print(f"   Caption: {caption}")
+    print(f"   FOL: {fol_structure}")
+    
+    print("\n=== CONVENIENCE METHODS ===")
+    # Demonstrate convenience methods
+    test_canvas = test_cases[0]['canvas']  # Use two shapes
+    
+    caption_only, choices = composer.generate_caption_only(test_canvas)
+    fol_only = composer.generate_fol_only(test_canvas)
+    
+    print("Using convenience methods:")
+    print(f"Caption only: {caption_only}")
+    print(f"FOL only: {fol_only}")
+    
+    print("\n=== FOL PREDICATE MAPPING EXAMPLES ===")
+    print("Shape index to FOL predicate mapping:")
+    from simple_shapes_dataset.text.language_templates import SHAPE_PREDICATES
+    for idx, predicate in SHAPE_PREDICATES.items():
+        print(f"  {idx}: {predicate}")
+    
+    print("\nColor RGB to FOL predicate examples:")
+    example_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0)]
+    for color in example_colors:
+        predicate = get_closest_color_predicate(color)
+        print(f"  {color}: {predicate}")
+    
+    print(f"\nSize categories (for {composer.img_size}x{composer.img_size} canvas):")
+    example_sizes = [2, 5, 8, 12, 16]
+    for size in example_sizes:
+        category = composer.size_config.get_size_category(size)
+        fol_pred = get_size_predicate(category)
+        print(f"  Size {size}: {category} → {fol_pred}")
+    
+    print("\n=== SPATIAL RELATIONSHIP EXAMPLES ===")
+    print("Spatial relationships and their FOL predicates:")
+    from simple_shapes_dataset.text.language_templates import SPATIAL_PREDICATES
+    for relation, fol_pred in SPATIAL_PREDICATES.items():
+        print(f"  '{relation}' → {fol_pred}(x,y)")
+    
+    print(f"\nSpatial thresholds (as ratio of {composer.img_size}px canvas):")
+    print(f"  Near: < {ThresholdConfig.NEAR_THRESHOLD:.0%}")
+    print(f"  Far: > {ThresholdConfig.FAR_THRESHOLD:.0%}")
+    
+    print("\n=== AVAILABLE TEMPLATES ===")
+    print("Sentence templates by category:")
+    for template_type, templates in SENTENCE_TEMPLATES.items():
+        print(f"  {template_type}:")
+        for template in templates[:2]:  # Show first 2 examples
+            print(f"    - {template}")
+        if len(templates) > 2:
+            print(f"    ... and {len(templates) - 2} more")
         print()
     
     print("\n=== SIZE RANGE RECOMMENDATIONS ===")
     print(f"Canvas size: {composer.img_size}x{composer.img_size}")
-    print("Size thresholds for classification:")
-    print(f"  Small: < {composer.small_threshold:.0%} of canvas")
-    print(f"  Medium: < {composer.medium_threshold:.0%} of canvas") 
-    print(f"  Large: < {composer.large_threshold:.0%} of canvas")
+    print("Size ranges (aligned with dataset generation):")
+    small_range, medium_range, large_range = composer.size_config.get_size_ranges()
+    print(f"  Small: {small_range[0]}-{small_range[1]}px")
+    print(f"  Medium: {medium_range[0]}-{medium_range[1]}px")
+    print(f"  Large: {large_range[0]}-{large_range[1]}px")
     
     # Test with different canvas sizes
     print(f"\n=== COMPARISON ACROSS CANVAS SIZES ===")
     for canvas_size in [32, 64, 128, 224]:
         test_composer = create_multi_shape_composer(canvas_size)
-        small_px = int(canvas_size * test_composer.small_threshold)
-        medium_px = int(canvas_size * test_composer.medium_threshold)
-        large_px = int(canvas_size * test_composer.large_threshold)
-        print(f"  {canvas_size:3d}x{canvas_size:<3d}: small<{small_px:2d}px, medium<{medium_px:2d}px, large<{large_px:2d}px")
+        small_range, medium_range, large_range = test_composer.size_config.get_size_ranges()
+        print(f"  {canvas_size:3d}x{canvas_size:<3d}: small:{small_range[0]}-{small_range[1]}px, medium:{medium_range[0]}-{medium_range[1]}px, large:{large_range[0]}-{large_range[1]}px")

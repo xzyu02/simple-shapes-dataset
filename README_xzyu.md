@@ -16,11 +16,10 @@ shapesd create-multi --output_path /users/xyu110/scratch/multi --ntrain 10 --nva
 # Variable number of shapes per image (5-10 shapes randomly)
 shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 1000 --nval 50 --ntest 50 --spc 5 --var --min_spc 3 --img_size 224
 
-# Caption Generation for Multi Shapes with optimal sizing
-shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 5 --var --min_spc 3 --img_size 224 --even_sizes --captions
-
 # Generate QA with evenly distributed sizes for multi-shape scenes
 shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 3 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8
+
+shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 3 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8 --shapes "0,1,2"
 ```
 
 Results running `test_dataset_loader.py`:
