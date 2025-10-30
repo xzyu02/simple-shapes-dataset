@@ -335,65 +335,67 @@ class BindingQAComposer:
             "attribute_questions": attribute_count,
         }
 
+    def generate_counting_qa(self,
+                             canvas_data: Dict,
+                             max_questions: int = 6) -> List[Tuple[str, str]]:
+        """
+        Generate counting questions for shapes and color-specific shapes.
+
+        Examples:
+        - "How many squares are on the image?" -> "3"
+        - "How many green circles are on the image?" -> "1"
+
+        Returns a list of (question, numeric_answer) pairs.
+        
+        Note: Counts based on actual shape class IDs and RGB colors, not text descriptions.
+        """
+        num_shapes = int(canvas_data.get("num_shapes", 0))
+        if num_shapes <= 0:
+            return []
+
+        from collections import Counter
+        
+        # Work with raw class IDs and colors for accurate counting
+        classes = canvas_data["classes"][:num_shapes]
+        colors = canvas_data["colors"][:num_shapes]
+        
+        # Convert colors to tuples for hashability
+        color_tuples = [tuple(c) for c in colors]
+        
+        shape_class_counts = Counter(classes)
+        color_counts = Counter(color_tuples)
+        color_shape_counts = Counter(zip(color_tuples, classes))
+        
+        qa_pairs: List[Tuple[str, str]] = []
+        
+        # Helper for pluralization (simple 's' suffix)
+        def pluralize(noun: str, count: int) -> str:
+            return noun if count == 1 else noun + "s"
+        
+        # Add color-only questions
+        for color_tuple, count in color_counts.items():
+            color_desc, _ = color_large_set_writer(*color_tuple)
+            question = f"How many {color_desc} shapes are on the image?"
+            qa_pairs.append((question, str(count)))
+        
+        # Add shape-only questions
+        for shape_class, count in shape_class_counts.items():
+            # Get canonical name for this shape class
+            shape_name, _ = shapes_writer(int(shape_class))
+            question = f"How many {pluralize(shape_name, 2)} are on the image?"
+            qa_pairs.append((question, str(count)))
+ 
+        # Add color+shape questions
+        for (color_tuple, shape_class), count in color_shape_counts.items():
+            # Get canonical names
+            shape_name, _ = shapes_writer(int(shape_class))
+            color_desc, _ = color_large_set_writer(*color_tuple)
+            question = f"How many {color_desc} {pluralize(shape_name, 2)} are on the image?"
+            qa_pairs.append((question, str(count)))
+
+        return qa_pairs
+
 
 def create_qa_composer(img_size: int = 32) -> BindingQAComposer:
     """Factory function to create a binding QA composer."""
     return BindingQAComposer(img_size=img_size)
-
-
-# Example usage and testing
-if __name__ == "__main__":
-    print("=== BINDING QA COMPOSER TEST ===\n")
-    
-    composer = create_qa_composer(32)
-    
-    # Example canvas data
-    test_canvas = {
-        "classes": np.array([3, 4]),  # circle, square
-        "sizes": np.array([12, 8]),   # large, small
-        "colors": np.array([[255, 0, 0], [0, 0, 255]]),  # red, blue
-        "locations": np.array([[10, 15], [20, 15]]),  # side by side
-        "num_shapes": 2,
-    }
-    
-    print("1. Spatial Binding Questions:")
-    spatial_qa = composer.generate_spatial_binding_qa(test_canvas, num_qa_pairs=6)
-    for i, (question, answer) in enumerate(spatial_qa, 1):
-        print(f"   Q{i}: {question} → {answer}")
-    
-    print(f"\n   Balance Analysis: {composer.analyze_qa_balance(spatial_qa)}")
-    print()
-    
-    print("2. Attribute Binding Questions:")
-    attribute_qa = composer.generate_attribute_binding_qa(test_canvas, num_qa_pairs=4)
-    for i, (question, answer) in enumerate(attribute_qa, 1):
-        print(f"   Q{i}: {question} → {answer}")
-    
-    print(f"\n   Balance Analysis: {composer.analyze_qa_balance(attribute_qa)}")
-    print()
-    
-    print("3. Comprehensive Binding Test:")
-    comprehensive_qa = composer.generate_comprehensive_binding_qa(test_canvas, num_qa_pairs=8)
-    for i, (question, answer) in enumerate(comprehensive_qa, 1):
-        print(f"   Q{i}: {question} → {answer}")
-    
-    print(f"\n   Balance Analysis: {composer.analyze_qa_balance(comprehensive_qa)}")
-    print()
-    
-    # Test with multi-shape canvas
-    print("4. Multi-shape Binding Test:")
-    multi_canvas = {
-        "classes": np.array([3, 4, 5]),  # circle, square, star
-        "sizes": np.array([14, 10, 8]),   # large, medium, small
-        "colors": np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]]),  # red, green, blue
-        "locations": np.array([[8, 8], [24, 8], [16, 24]]),  # triangle formation
-        "num_shapes": 3,
-    }
-    
-    multi_qa = composer.generate_comprehensive_binding_qa(multi_canvas, num_qa_pairs=6)
-    for i, (question, answer) in enumerate(multi_qa, 1):
-        print(f"   Q{i}: {question} → {answer}")
-    
-    print(f"\n   Balance Analysis: {composer.analyze_qa_balance(multi_qa)}")
-    
-    print("\n=== TEST COMPLETE ===") 

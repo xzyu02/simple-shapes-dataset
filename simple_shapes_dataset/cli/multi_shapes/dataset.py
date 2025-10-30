@@ -46,7 +46,8 @@ def generate_multi_shapes_dataset(
     min_shapes_per_canvas: int = 1,
     max_shapes_per_canvas: int | None = None,
     even_sizes: bool = False,
-    allowed_classes: list[int] | None = None,
+    allowed_shape_ids: list[int] | None = None,
+    allowed_color_palette: list[tuple[int, int, int]] | None = None,
 ) -> MultiShapesDataset:
     """
     Generate a dataset with multiple shapes per image.
@@ -63,7 +64,6 @@ def generate_multi_shapes_dataset(
         min_shapes_per_canvas: Minimum shapes when variable_shapes=True
         max_shapes_per_canvas: Maximum shapes when variable_shapes=True (defaults to shapes_per_canvas)
         even_sizes: If True, use evenly distributed sizes across small/medium/large categories
-        allowed_classes: List of allowed shape class indices (0-6). If None, uses all 7 shapes.
     
     Returns:
         MultiShapesDataset with generated data
@@ -119,7 +119,13 @@ def generate_multi_shapes_dataset(
         all_num_shapes[canvas_idx] = current_num_shapes
         
         # Generate all attributes for shapes in this canvas
-        canvas_classes = generate_class(current_num_shapes, allowed_classes)
+        # Classes (optionally restricted to a provided set)
+        if allowed_shape_ids is None or len(allowed_shape_ids) == 0:
+            canvas_classes = generate_class(current_num_shapes)
+        else:
+            canvas_classes = np.random.choice(
+                np.array(allowed_shape_ids, dtype=np.int32), size=current_num_shapes, replace=True
+            )
         
         if even_sizes:
             from simple_shapes_dataset.cli.utils import generate_even_scale
@@ -128,7 +134,22 @@ def generate_multi_shapes_dataset(
             canvas_sizes = generate_scale(current_num_shapes, min_scale, max_scale)
             
         canvas_rotations = generate_rotation(current_num_shapes)
-        canvas_colors_rgb, canvas_colors_hls = generate_color(current_num_shapes, min_lightness, max_lightness)
+        # Colors (optionally restricted to a provided palette)
+        if allowed_color_palette is not None and len(allowed_color_palette) > 0:
+            palette = np.array(allowed_color_palette, dtype=np.int32)
+            choice_idx = np.random.randint(0, len(palette), size=current_num_shapes)
+            canvas_colors_rgb = palette[choice_idx]
+            # For HLS, approximate by converting RGB to HLS via OpenCV for consistency
+            try:
+                import cv2  # type: ignore
+                rgb_for_cv = canvas_colors_rgb.astype(np.uint8)[None, :, :]
+                hls = cv2.cvtColor(rgb_for_cv, cv2.COLOR_RGB2HLS)[0]
+                canvas_colors_hls = hls.astype(int)
+            except Exception:
+                # Fallback: fill HLS with zeros if cv2 not available at runtime
+                canvas_colors_hls = np.zeros_like(canvas_colors_rgb)
+        else:
+            canvas_colors_rgb, canvas_colors_hls = generate_color(current_num_shapes, min_lightness, max_lightness)
         canvas_unpaired = generate_unpaired_attr(current_num_shapes)
         
         # Generate non-colliding locations

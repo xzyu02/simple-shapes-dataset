@@ -303,25 +303,9 @@ def generate_location(n_samples: int, max_scale: int, imsize: int) -> np.ndarray
     return locations
 
 
-def generate_class(n_samples: int, allowed_classes: list[int] | None = None) -> np.ndarray:
-    """
-    Generate shape classes for n_samples.
-    
-    Args:
-        n_samples: Number of samples to generate
-        allowed_classes: List of allowed shape class indices. If None, uses all 7 shapes.
-                        Available shapes: 0=Triangle, 1=Square, 2=Pentagon, 3=Circle, 
-                        4=Star, 5=Heart, 6=Diamond, 7=Cross
-    
-    Returns:
-        Array of shape class indices
-    """
-    if allowed_classes is None:
-        # Default: use all 7 shapes
-        allowed_classes = list(range(7))  # [0, 1, 2, 3, 4, 5, 6]
-    
-    # Generate random classes from the allowed set
-    return np.random.choice(allowed_classes, size=n_samples)
+def generate_class(n_samples: int) -> np.ndarray:
+    # return np.full(n_samples, 6)  # Always generate hearts (class 6)
+    return np.random.randint(7, size=n_samples)
 
 
 def generate_unpaired_attr(n_samples: int) -> np.ndarray:
@@ -336,28 +320,9 @@ def generate_dataset(
     max_lightness: int,
     imsize: int,
     classes: np.ndarray | None = None,
-    allowed_classes: list[int] | None = None,
 ) -> Dataset:
-    """
-    Generate a dataset with specified parameters.
-    
-    Args:
-        n_samples: Number of samples to generate
-        min_scale: Minimum shape size
-        max_scale: Maximum shape size
-        min_lightness: Minimum color lightness
-        max_lightness: Maximum color lightness
-        imsize: Image size
-        classes: Pre-defined classes array. If None, generates random classes.
-        allowed_classes: List of allowed shape classes. Only used if classes is None.
-                        Available: 0=Triangle, 1=Square, 2=Pentagon, 3=Circle, 
-                                  4=Star, 5=Heart, 6=Diamond, 7=Cross
-    
-    Returns:
-        Dataset object
-    """
     if classes is None:
-        classes = generate_class(n_samples, allowed_classes)
+        classes = generate_class(n_samples)
 
     sizes = generate_scale(n_samples, min_scale, max_scale)
     locations = generate_location(n_samples, max_scale, imsize)

@@ -46,8 +46,8 @@ def save_multi_shapes_labels(path_root: Path, dataset: MultiShapesDataset) -> No
     np.save(path_root, labels)
     
     # Also save the num_shapes array separately for easy access
-    num_shapes_path = path_root.parent / (path_root.stem + "_num_shapes.npy")
-    np.save(num_shapes_path, dataset.num_shapes)
+    # num_shapes_path = path_root.parent / (path_root.stem + "_num_shapes.npy")
+    # np.save(num_shapes_path, dataset.num_shapes)
 
 
 def load_multi_shapes_labels(path_root: Path) -> MultiShapesDataset:

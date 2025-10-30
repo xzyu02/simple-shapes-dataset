@@ -10,7 +10,9 @@ from .collision import (
 from .dataset import MultiShapesDataset, generate_multi_shapes_dataset
 from .io import load_multi_shapes_labels, save_multi_shapes_labels
 from .dataset_torch import MultiShapeDataset, create_train_val_test_loaders
+from .counting_qa_dataset import CountingQADataset, create_counting_qa_loaders
 from .rendering import save_multi_shapes_dataset
+from .utils import parse_allowed_shapes, parse_allowed_colors
 
 __all__ = [
     # Collision detection
@@ -28,6 +30,12 @@ __all__ = [
     # Loader
     "MultiShapeDataset",
     "create_train_val_test_loaders",
+    # Counting QA Loader
+    "CountingQADataset",
+    "create_counting_qa_loaders",
     # Rendering
     "save_multi_shapes_dataset",
+    # Utils
+    "parse_allowed_shapes",
+    "parse_allowed_colors",
 ]

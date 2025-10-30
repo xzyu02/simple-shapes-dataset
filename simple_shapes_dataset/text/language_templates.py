@@ -62,13 +62,14 @@ ARRANGEMENTS = {
 
 # FOL predicate mappings for shapes
 SHAPE_PREDICATES = {
-    0: "Diamond",
-    1: "Oval", 
-    2: "Triangle",
+    0: "Triangle",
+    1: "Square", 
+    2: "Pentagon",
     3: "Circle",
-    4: "Square",
-    5: "Star",
-    6: "Heart"
+    4: "Star",
+    5: "Heart",
+    6: "Diamond",
+    7: "Cross"
 }
 
 # FOL predicate mappings for colors (RGB tuples to predicates)
