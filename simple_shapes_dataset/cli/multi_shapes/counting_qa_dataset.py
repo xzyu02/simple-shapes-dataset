@@ -57,6 +57,14 @@ class CountingQADataset(Dataset):
         
         self.qa_pairs = np.load(qa_path, allow_pickle=True)
         
+        # Load labels to get num_shapes per canvas
+        labels_path = self.dataset_path / f"{split}_labels.npy"
+        if not labels_path.exists():
+            raise FileNotFoundError(f"Labels file not found: {labels_path}")
+
+        self.labels = np.load(labels_path, allow_pickle=True)
+        self.num_shapes_per_canvas = [canvas_dict['num_shapes_in_canvas'] for canvas_dict in self.labels]
+            
         # Image transform: resize and normalize
         self.transform = transforms.Compose([
             transforms.Resize((image_size, image_size)),
@@ -96,12 +104,16 @@ class CountingQADataset(Dataset):
         answer_str = sample['answer']
         label = int(answer_str)
         
+        # Get total shapes for this canvas
+        total_shapes = self.num_shapes_per_canvas[canvas_idx]
+        
         return {
             'question': sample['question'],
             'image': image,
             'answer': answer_str,
             'label': label,
             'canvas_idx': canvas_idx,
+            'total_shapes': total_shapes,
         }
     
     @staticmethod
@@ -113,6 +125,7 @@ class CountingQADataset(Dataset):
             'answer': [item['answer'] for item in batch],
             'label': torch.tensor([item['label'] for item in batch], dtype=torch.long),
             'canvas_idx': torch.tensor([item['canvas_idx'] for item in batch], dtype=torch.long),
+            'total_shapes': torch.tensor([item['total_shapes'] for item in batch], dtype=torch.long),
         }
     
     def create_dataloader(

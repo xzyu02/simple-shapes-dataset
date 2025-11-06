@@ -18,11 +18,12 @@ def save_multi_shapes_labels(path_root: Path, dataset: MultiShapesDataset) -> No
     n_canvases = dataset.classes.shape[0]
     
     # Flatten all data and create labels array
-    # Format: [canvas_idx, shape_idx, class, location_x, location_y, size, rotation, color_r, color_g, color_b, hls_h, hls_l, hls_s, unpaired]
+    # Format: list of dicts with 'labels' (list of shape data) and 'num_shapes_in_canvas' (int)
     labels_list = []
     
     for canvas_idx in range(n_canvases):
         num_shapes_in_canvas = dataset.num_shapes[canvas_idx]
+        labels_list_canvas = []
         for shape_idx in range(num_shapes_in_canvas):
             label = [
                 canvas_idx,
@@ -40,16 +41,21 @@ def save_multi_shapes_labels(path_root: Path, dataset: MultiShapesDataset) -> No
                 dataset.colors_hls[canvas_idx, shape_idx, 2],
                 dataset.unpaired[canvas_idx, shape_idx],
             ]
-            labels_list.append(label)
+            labels_list_canvas.append(label)
+        
+        # Create dict with labels and num_shapes_in_canvas
+        canvas_dict = {
+            'labels': labels_list_canvas,
+            'num_shapes_in_canvas': int(num_shapes_in_canvas)
+        }
+        labels_list.append(canvas_dict)
     
-    labels = np.array(labels_list, dtype=np.float32)
+    # Save as numpy array with object dtype to preserve dict structure
+    labels = np.array(labels_list, dtype=object)
     np.save(path_root, labels)
-    
-    # Also save the num_shapes array separately for easy access
-    # num_shapes_path = path_root.parent / (path_root.stem + "_num_shapes.npy")
-    # np.save(num_shapes_path, dataset.num_shapes)
 
 
+# TODO: Have not fixed for the changed in save_multi_shapes_labels
 def load_multi_shapes_labels(path_root: Path) -> MultiShapesDataset:
     """
     Load multi-shapes dataset labels from a numpy file.

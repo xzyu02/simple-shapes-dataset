@@ -11,21 +11,29 @@ pip install -e .
 shapesd create --output_path /users/xyu110/scratch/single --ntrain 100 --nval 20 --ntest 20 --img_size 64 --bg black
 
 # Multiple shapes per image (fixed number)
-shapesd create-multi --output_path /users/xyu110/scratch/multi --ntrain 10 --nval 5 --ntest 5 --spc 10 --img_size 224
+# shapesd create-multi --output_path /users/xyu110/scratch/multi --ntrain 10 --nval 5 --ntest 5 --spc 10 --img_size 224
 
-# Variable number of shapes per image (5-10 shapes randomly)
-shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 1000 --nval 50 --ntest 50 --spc 5 --var --min_spc 3 --img_size 224
+# # Variable number of shapes per image (5-10 shapes randomly)
+# shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 1000 --nval 50 --ntest 50 --spc 5 --var --min_spc 3 --img_size 224
 
-# Generate QA with evenly distributed sizes for multi-shape scenes
-shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 3 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8
+# # Generate QA with evenly distributed sizes for multi-shape scenes
+# shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 3 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8
 
-shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 3 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8 --shapes "0,1,2"
+# shapesd create-multi --output_path /users/xyu110/scratch/variable --ntrain 50 --nval 50 --ntest 50 --spc 3 --img_size 224 --even_sizes --captions --qa --num_qa_pairs 8 --shapes "0,1,2"
 
 # Restrict to two shapes and two colors with counting QA: CountingQADataset
 shapesd create-multi \
 	--output_path /users/xyu110/scratch/two-types \
 	--ntrain 100 --nval 20 --ntest 20 \
-	--spc 70 --img_size 224 \
+	--spc 100 --img_size 224 \
+	--shapes "square,circle" \
+	--colors "red,green" \
+	--captions --qa --qa_type counting
+
+shapesd create-multi \
+	--output_path /oscar/data/tserre/xyu110/multi_ssd \
+	--ntrain 100 --nval 20 --ntest 20 \
+	--var --min_spc 30 --spc 50 --img_size 224 \
 	--shapes "square,circle" \
 	--colors "red,green" \
 	--captions --qa --qa_type counting
